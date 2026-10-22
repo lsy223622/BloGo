@@ -7,3 +7,7 @@
 分类聚合包含文章所属分类的祖先，同一分类按文章 ID 去重。分类、标签与归档只从 Public 文章产生；未使用的元数据项不会显示在总览。展示名与父分类变化不改变分类/标签的 URL 和身份。
 
 每个列表第一页使用基础路径，后续页追加 `page/{n}/`；分页身份为 `{基础ID}:page:{n}`。分类使用 `category:{id}`，标签使用 `tag:{id}`，归档使用 `archive:{yyyy}` 或 `archive:{yyyy}-{mm}`。无内容时保留首页和系统总览，不生成空的后续页。
+
+上一篇/下一篇按 Public 文章的发布时间建立，与更新时间列表分离。RSS 的 GUID 使用稳定内容 ID；RSS 和 Sitemap 排除 Unlisted/Draft，Sitemap 另排除 404。生成链接均使用规范 URL。
+
+重定向文件包含 Nginx `map` 的字面量条目，覆盖无尾斜杠、`index.html` 和历史 aliases；目标只能为内容的当前规范 URL。由部署示例统一返回 301 并保留 query，生成器不修改或重载 Nginx。

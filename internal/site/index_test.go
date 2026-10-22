@@ -9,7 +9,7 @@ import (
 )
 
 func indexedItem(id string, kind content.Kind, status content.Status, published, updated *time.Time) *content.ContentItem {
-	return &content.ContentItem{ID: string(kind) + ":" + id, URL: "/" + string(kind) + "/" + id + "/", Kind: kind, Status: status, Published: published, Updated: updated, Meta: content.Metadata{Title: id}}
+	return &content.ContentItem{ID: string(kind) + ":" + id, URL: "/" + string(kind) + "/" + id + "/", Kind: kind, Format: content.Markdown, Stats: true, Status: status, Published: published, Updated: updated, Meta: content.Metadata{Title: id}}
 }
 func ids(items []*content.ContentItem) []string {
 	var result []string
