@@ -1,6 +1,7 @@
 package config
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"net"
@@ -31,13 +32,18 @@ func (d *Duration) UnmarshalYAML(n *yaml.Node) error {
 }
 
 type Config struct {
-	Site  Site           `yaml:"site"`
-	Paths Paths          `yaml:"paths"`
-	Build Build          `yaml:"build"`
-	Stats Stats          `yaml:"stats"`
-	Extra map[string]any `yaml:"extra"`
-	file  string
+	Site   Site           `yaml:"site"`
+	Paths  Paths          `yaml:"paths"`
+	Build  Build          `yaml:"build"`
+	Stats  Stats          `yaml:"stats"`
+	Extra  map[string]any `yaml:"extra"`
+	file   string
+	digest [32]byte
 }
+
+func (c *Config) FilePath() string     { return c.file }
+func (c *Config) FileDigest() [32]byte { return c.digest }
+
 type Site struct {
 	BaseURL  string `yaml:"base_url"`
 	Title    string `yaml:"title"`
@@ -86,6 +92,7 @@ func Load(file string) (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", file, err)
 	}
+	c.digest = sha256.Sum256(data)
 	fail := func(section, field, msg string) (*Config, error) {
 		return nil, fmt.Errorf("%s: %w", file, yamlutil.Error(yamlutil.Field(yamlutil.Field(n, section), field), section+"."+field, msg))
 	}
