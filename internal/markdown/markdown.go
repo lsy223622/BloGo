@@ -143,5 +143,13 @@ func renderCode(w util.BufWriter, source []byte, n ast.Node, enter bool) (ast.Wa
 func HighlightCSS() string {
 	var b bytes.Buffer
 	_ = html.New(html.WithClasses(true)).WriteCSS(&b, styles.Get("github"))
-	return b.String()
+	var dark bytes.Buffer
+	_ = html.New(html.WithClasses(true)).WriteCSS(&dark, styles.Get("github-dark"))
+	scope := func(prefix string) string {
+		s := strings.ReplaceAll(dark.String(), ".chroma", prefix+" .chroma")
+		// Dark styles omit tokens that inherit their base color. Reset the light
+		// theme's explicit token colors before applying those dark overrides.
+		return prefix + " .chroma span{color:inherit;font-style:inherit;font-weight:inherit;text-decoration:inherit;background-color:transparent}" + strings.ReplaceAll(s, ".bg", prefix+" .bg")
+	}
+	return b.String() + scope(`[data-theme="dark"]`) + "@media(prefers-color-scheme:dark){" + scope(`:root:not([data-theme="light"])`) + "}"
 }

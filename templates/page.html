@@ -6,6 +6,7 @@
 <title>{{if eq .Page.ID "home"}}{{.Site.Title}}{{else}}{{.Page.Title}} · {{.Site.Title}}{{end}}</title>
 <meta name="description" content="{{if .Summary}}{{.Summary}}{{else}}{{.Site.Title}}{{end}}">
 <link rel="canonical" href="{{.Canonical}}">
+<link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
 <meta property="og:title" content="{{.Page.Title}}">
 <meta property="og:url" content="{{.Canonical}}">
 <meta property="og:type" content="{{if eq .Page.Kind "post"}}article{{else}}website{{end}}">
