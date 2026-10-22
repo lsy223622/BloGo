@@ -1,0 +1,22 @@
+[Unit]
+Description=BloGo fingerprint watcher and publisher
+After=local-fs.target
+
+[Service]
+Type=simple
+User=blog-build
+Group=blog-meta
+ExecStart=/usr/local/bin/blog watch --config /etc/blog/build.yaml
+Restart=on-failure
+RestartSec=5
+UMask=0027
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadOnlyPaths=/srv/blog/source /etc/blog
+ReadWritePaths=/srv/blog
+InaccessiblePaths=/var/lib/blog-stats /srv/blog-stats-private
+
+[Install]
+WantedBy=multi-user.target

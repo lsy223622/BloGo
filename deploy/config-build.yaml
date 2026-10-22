@@ -1,0 +1,19 @@
+site:
+  base_url: https://blog.example.com
+  title: BloGo
+  timezone: Asia/Shanghai
+  language: zh-CN
+paths:
+  source: /srv/blog/source/content
+  templates: /srv/blog/source/templates
+  static: /srv/blog/source/static
+  taxonomies: /srv/blog/source/taxonomies.yaml
+  releases: /srv/blog/releases
+  staging: /srv/blog/staging
+  current: /srv/blog/current
+build:
+  scan_interval: 60s
+  page_size: 10
+  summary_max_chars: 160
+  strict_links: false
+  keep_releases: 3
