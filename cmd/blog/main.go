@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/lsy223622/BloGo/internal/config"
 	"io"
 	"os"
 )
@@ -28,9 +29,13 @@ func run(args []string, out, errOut io.Writer) int {
 	}
 	flags := flag.NewFlagSet(command, flag.ContinueOnError)
 	flags.SetOutput(errOut)
-	flags.String("config", "config.yaml", "configuration file")
+	configFile := flags.String("config", "config.yaml", "configuration file")
+	var output string
 	if command == "build" {
-		flags.String("output", "", "independent output directory (required)")
+		flags.StringVar(&output, "output", "", "independent output directory (required)")
+	}
+	if command == "dev" {
+		flags.StringVar(&output, "output", "output/dev", "independent preview output directory")
 	}
 	flags.Usage = func() {
 		fmt.Fprintf(out, "Usage: blog %s [options]\n", command)
@@ -48,7 +53,14 @@ func run(args []string, out, errOut io.Writer) int {
 		fmt.Fprintln(errOut, "blog: unexpected positional arguments")
 		return 1
 	}
-	// Command implementations are added at their implementation-plan gates.
+	c, err := config.Load(*configFile)
+	if err == nil {
+		err = c.Validate(command, output)
+	}
+	if err != nil {
+		fmt.Fprintf(errOut, "blog %s: %v\n", command, err)
+		return 1
+	}
 	fmt.Fprintf(errOut, "blog %s: not implemented\n", command)
 	return 1
 }

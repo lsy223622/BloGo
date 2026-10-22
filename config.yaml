@@ -1,0 +1,20 @@
+site:
+  base_url: https://example.com
+  title: BloGo
+  timezone: Asia/Shanghai
+  language: zh-CN
+paths:
+  source: content
+  templates: templates
+  static: static
+  taxonomies: taxonomies.yaml
+  releases: runtime/releases
+  staging: runtime/staging
+  current: runtime/current
+build:
+  scan_interval: 60s
+  summary_max_chars: 160
+  page_size: 10
+  strict_links: false
+  keep_releases: 3
+extra: {}
