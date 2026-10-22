@@ -112,3 +112,41 @@ func TestResourceErrorsAndStrictContentLinks(t *testing.T) {
 		t.Fatal("missing image built")
 	}
 }
+
+func TestTrackingCoversManifestAndStandaloneRequiresBody(t *testing.T) {
+	c := buildFixture(t)
+	repo, err := filepath.Abs("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.Paths.Templates = filepath.Join(repo, "templates")
+	c.Paths.Static = filepath.Join(repo, "static")
+	put(t, c.Paths.Source, "pages/standalone.html", "---\ntitle: Standalone\nstatus: public\nlayout: standalone\n---\n<html><head></head><body><!-- </body> --><script>const s='</body>';</script>Body</body></html>")
+	out := filepath.Join(t.TempDir(), "site")
+	result, err := Build(c, out, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range result.Manifest.Pages {
+		file := filepath.Join(out, "public", filepath.FromSlash(strings.TrimPrefix(p.URL, "/")), "index.html")
+		data, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.Count(string(data), `data-page-id="`+p.ID+`"`) < 1 || !strings.Contains(string(data), "/assets/stats.") {
+			t.Fatalf("missing tracker for %s", p.ID)
+		}
+	}
+	put(t, c.Paths.Source, "pages/standalone.html", "---\ntitle: Broken\nstatus: public\nlayout: standalone\n---\n<html><body>no closing body")
+	if _, err = Build(c, out, false); err == nil {
+		t.Fatal("bodyless tracked standalone built")
+	}
+	put(t, c.Paths.Source, "pages/standalone.html", "---\ntitle: Untracked\nstatus: public\nlayout: standalone\nstats: false\n---\n<html><body>original")
+	if _, err = Build(c, out, false); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(filepath.Join(out, "public/standalone/index.html"))
+	if err != nil || string(data) != "<html><body>original" {
+		t.Fatalf("untracked standalone changed: %q %v", data, err)
+	}
+}
