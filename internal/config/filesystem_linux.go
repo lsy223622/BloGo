@@ -36,3 +36,14 @@ func privateKey(path string) error {
 	}
 	return nil
 }
+
+func writableDirectory(path string) error {
+	info, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("%s: expected output directory", path)
+	}
+	return syscall.Access(path, 3)
+}

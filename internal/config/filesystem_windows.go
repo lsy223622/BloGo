@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -37,3 +38,22 @@ func sameFilesystem(paths ...string) error {
 // Unix mode bits do not describe Windows ACLs. Production key permission
 // checks run on Linux, the deployment platform.
 func privateKey(string) error { return nil }
+
+func writableDirectory(path string) error {
+	info, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("%s: expected output directory", path)
+	}
+	ptr, err := syscall.UTF16PtrFromString(path)
+	if err != nil {
+		return err
+	}
+	h, err := syscall.CreateFile(ptr, syscall.GENERIC_WRITE, syscall.FILE_SHARE_READ|syscall.FILE_SHARE_WRITE|syscall.FILE_SHARE_DELETE, nil, syscall.OPEN_EXISTING, syscall.FILE_FLAG_BACKUP_SEMANTICS, 0)
+	if err != nil {
+		return fmt.Errorf("%s: %w", path, err)
+	}
+	return syscall.CloseHandle(h)
+}

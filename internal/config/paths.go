@@ -45,6 +45,38 @@ func contains(parent, child string) bool {
 	return err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
 }
 
+func writableTarget(path string, directory bool) error {
+	info, err := os.Stat(path)
+	if err == nil {
+		if directory {
+			if !info.IsDir() {
+				return fmt.Errorf("%s: expected output directory", path)
+			}
+			return writableDirectory(path)
+		}
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("%s: expected ordinary output file", path)
+		}
+		f, err := os.OpenFile(path, os.O_WRONLY, 0)
+		if err != nil {
+			return err
+		}
+		return f.Close()
+	}
+	if !os.IsNotExist(err) {
+		return err
+	}
+	parent := path
+	if !directory {
+		parent = filepath.Dir(path)
+	}
+	parent, err = existingAncestor(parent)
+	if err != nil {
+		return err
+	}
+	return writableDirectory(parent)
+}
+
 func (c *Config) validatePaths(output string) error {
 	type named struct{ name, path string }
 	inputs := []named{{"source", c.Paths.Source}, {"templates", c.Paths.Templates}, {"static", c.Paths.Static}, {"taxonomies", c.Paths.Taxonomies}, {"config", c.file}}

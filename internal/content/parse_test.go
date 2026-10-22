@@ -21,6 +21,16 @@ func TestParsePreservesBody(t *testing.T) {
 	}
 }
 
+func TestEmptyFrontMatterDraft(t *testing.T) {
+	item, err := Parse("posts/empty.md", []byte("---\n---\nBody"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if item.Body != "Body" {
+		t.Fatalf("body %q", item.Body)
+	}
+}
+
 func TestParseRejectsBadSources(t *testing.T) {
 	for _, tc := range []struct{ path, data, want string }{
 		{"posts/a.md", "title: No delimiter", "Front Matter"},

@@ -38,6 +38,7 @@ func TestRouteConflicts(t *testing.T) {
 		{"reserved system", []string{"permalink: /categories\n"}, nil},
 		{"reserved pagination", []string{"permalink: /posts/a/page/2\n"}, nil},
 		{"reserved alias", []string{"aliases: [/api/events]\n"}, nil},
+		{"reserved implicit alias", []string{"aliases: [/categories/tech/index.html]\n"}, nil},
 		{"root", []string{"permalink: /\n"}, nil},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -54,7 +55,7 @@ func TestRouteConflicts(t *testing.T) {
 
 func TestDistinctRoutesAndAssets(t *testing.T) {
 	items := []*content.ContentItem{routeItem(t, "pages/a.md", "permalink: /about\naliases: [/legacy.html]\n"), routeItem(t, "pages/b.md", "permalink: /about/team\n")}
-	if err := ValidateRoutes(items, []string{"assets/style.css", "images/pic.webp"}); err != nil {
+	if err := ValidateRoutes(items, []string{"favicon.ico", "assets/style.css", "images/pic.webp"}); err != nil {
 		t.Fatal(err)
 	}
 }

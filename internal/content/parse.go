@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/lsy223622/BloGo/internal/yamlutil"
 	"go.yaml.in/yaml/v3"
@@ -65,6 +66,11 @@ type ContentItem struct {
 	URL        string
 	OutputPath string
 	Aliases    []string
+	Status     Status
+	Layout     string
+	Published  *time.Time
+	Updated    *time.Time
+	Stats      bool
 	node       *yaml.Node
 }
 
@@ -110,7 +116,11 @@ func Parse(sourcePath string, data []byte) (*ContentItem, error) {
 		}
 		if strings.TrimSuffix(string(data[pos:end]), "\r") == "---" {
 			// Keep line numbers relative to the source, including the opening delimiter.
-			n, err := yamlutil.Decode(append([]byte("\n"), data[start:pos]...), &item.Meta)
+			frontMatter := data[start:pos]
+			if len(bytes.TrimSpace(frontMatter)) == 0 {
+				frontMatter = []byte("{}\n")
+			}
+			n, err := yamlutil.Decode(append([]byte("\n"), frontMatter...), &item.Meta)
 			if err != nil {
 				return nil, fmt.Errorf("%s: %w", sourcePath, err)
 			}

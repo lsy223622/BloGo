@@ -14,6 +14,9 @@ var pagination = regexp.MustCompile(`(?:^|/)page/[0-9]+(?:/|$)`)
 var archiveRoute = regexp.MustCompile(`^/archives/[0-9]{4}(?:/[0-9]{2})?/$`)
 
 func reserved(u string) bool {
+	if strings.HasSuffix(u, "/index.html") {
+		u = strings.TrimSuffix(u, "index.html")
+	}
 	for _, prefix := range []string{"/api/", "/data/", "/assets/"} {
 		if u == strings.TrimSuffix(prefix, "/") || strings.HasPrefix(u, prefix) {
 			return true
@@ -92,7 +95,7 @@ func ValidateRoutes(items []*content.ContentItem, staticFiles []string) error {
 		if strings.HasPrefix(u, "/api/") || strings.HasPrefix(u, "/data/") || u == "/api" || u == "/data" {
 			return fmt.Errorf("static %s: reserved service mapping", file)
 		}
-		if reserved(path.Dir(u)+"/") && !strings.HasPrefix(u, "/assets/") {
+		if path.Base(u) == "index.html" && reserved(u) && !strings.HasPrefix(u, "/assets/") {
 			return fmt.Errorf("static %s: reserved system route", file)
 		}
 		if err := addFile(file, "static "+file); err != nil {

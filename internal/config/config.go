@@ -228,6 +228,30 @@ func (c *Config) Validate(command, output string) error {
 	if err := c.validatePaths(output); err != nil {
 		return fail("paths", err.Error())
 	}
+	type targetPath struct {
+		path      string
+		directory bool
+	}
+	var targets []targetPath
+	switch command {
+	case "build", "dev":
+		targets = append(targets, targetPath{output, true})
+	case "publish", "watch":
+		for _, p := range []string{c.Paths.Staging, c.Paths.Releases, filepath.Dir(c.Paths.Current)} {
+			targets = append(targets, targetPath{p, true})
+		}
+	case "stats":
+		targets = append(targets, targetPath{c.Stats.DatabasePath, false})
+	case "report":
+		for _, p := range []string{c.Stats.PublicOutput, c.Stats.PrivateOutput} {
+			targets = append(targets, targetPath{p, false})
+		}
+	}
+	for _, target := range targets {
+		if err := writableTarget(target.path, target.directory); err != nil {
+			return fail("output", err.Error())
+		}
+	}
 	return nil
 }
 

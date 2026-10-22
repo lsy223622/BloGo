@@ -51,8 +51,36 @@ func TestLoadDefaultsAndCommandBoundaries(t *testing.T) {
 	if err := c.Validate("build", ""); err == nil {
 		t.Fatal("accepted absent output")
 	}
+	if err := c.Validate("build", file); err == nil {
+		t.Fatal("accepted file as output directory")
+	}
+	ordinaryFile := filepath.Join(filepath.Dir(file), "ordinary-file")
+	if err := os.WriteFile(ordinaryFile, []byte("file"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.Validate("build", ordinaryFile); err == nil {
+		t.Fatal("accepted unrelated ordinary file as output directory")
+	}
 	if err := c.Validate("publish", ""); err == nil {
 		t.Fatal("accepted absent release paths")
+	}
+}
+
+func TestPublishingPathRelations(t *testing.T) {
+	c, err := Load(fixture(t, ""))
+	if err != nil {
+		t.Fatal(err)
+	}
+	base := filepath.Dir(c.Paths.Source)
+	c.Paths.Staging = filepath.Join(base, "staging")
+	c.Paths.Releases = filepath.Join(base, "releases")
+	c.Paths.Current = filepath.Join(base, "current")
+	if err = c.Validate("publish", ""); err != nil {
+		t.Fatal(err)
+	}
+	c.Paths.Staging = filepath.Join(c.Paths.Releases, "staging")
+	if err = c.Validate("publish", ""); err == nil {
+		t.Fatal("accepted nested staging/releases")
 	}
 }
 
