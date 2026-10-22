@@ -98,6 +98,9 @@ func ValidateRoutes(items []*content.ContentItem, staticFiles []string) error {
 		if path.Base(u) == "index.html" && reserved(u) && !strings.HasPrefix(u, "/assets/") {
 			return fmt.Errorf("static %s: reserved system route", file)
 		}
+		if !strings.HasPrefix(u, "/assets/") && (reserved(u+"/") || u == "/page" || strings.HasSuffix(u, "/page")) {
+			return fmt.Errorf("static %s: reserved output directory", file)
+		}
 		if err := addFile(file, "static "+file); err != nil {
 			return err
 		}

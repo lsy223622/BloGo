@@ -225,7 +225,7 @@ func (c *Config) Validate(command, output string) error {
 	if output != "" && !filepath.IsAbs(output) {
 		output = filepath.Join(filepath.Dir(c.file), output)
 	}
-	if err := c.validatePaths(output); err != nil {
+	if err := c.validatePaths(command, output); err != nil {
 		return fail("paths", err.Error())
 	}
 	type targetPath struct {

@@ -82,6 +82,64 @@ func TestPublishingPathRelations(t *testing.T) {
 	if err = c.Validate("publish", ""); err == nil {
 		t.Fatal("accepted nested staging/releases")
 	}
+	c.Paths.Staging = filepath.Join(base, "staging")
+	for _, current := range []string{c.Paths.Releases, filepath.Dir(c.Paths.Releases)} {
+		c.Paths.Current = current
+		if err = c.Validate("publish", ""); err == nil {
+			t.Fatalf("accepted dangerous current %s", current)
+		}
+	}
+	c.Paths.Current = filepath.Join(c.Paths.Releases, "ordinary-current")
+	if err = os.MkdirAll(c.Paths.Current, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err = c.Validate("publish", ""); err == nil {
+		t.Fatal("accepted ordinary directory as current")
+	}
+}
+
+func TestManifestCannotBeOverwritten(t *testing.T) {
+	dir := t.TempDir()
+	manifest := filepath.Join(dir, "manifest.json")
+	if err := os.WriteFile(manifest, []byte("{}"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	key := filepath.Join(dir, "key")
+	if err := os.WriteFile(key, []byte("key"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	file := filepath.Join(dir, "config.yaml")
+	if err := os.WriteFile(file, []byte("site:\n  base_url: https://example.com\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct{ command, field string }{{"stats", "database"}, {"report", "public"}, {"report", "private"}} {
+		t.Run(tc.command+tc.field, func(t *testing.T) {
+			c, err := Load(file)
+			if err != nil {
+				t.Fatal(err)
+			}
+			c.Stats.ManifestPath = manifest
+			c.Stats.DatabasePath = filepath.Join(dir, "db")
+			c.Stats.VisitorKeyPath = key
+			c.Stats.PublicOutput = filepath.Join(dir, "public/stats.json")
+			c.Stats.PrivateOutput = filepath.Join(dir, "private/report.html")
+			if tc.field == "database" {
+				c.Stats.DatabasePath = manifest
+			} else {
+				if err = os.WriteFile(c.Stats.DatabasePath, []byte("db"), 0600); err != nil {
+					t.Fatal(err)
+				}
+				if tc.field == "public" {
+					c.Stats.PublicOutput = manifest
+				} else {
+					c.Stats.PrivateOutput = manifest
+				}
+			}
+			if err = c.Validate(tc.command, ""); err == nil {
+				t.Fatal("accepted Manifest overwrite")
+			}
+		})
+	}
 }
 
 func TestInvalidConfiguration(t *testing.T) {
