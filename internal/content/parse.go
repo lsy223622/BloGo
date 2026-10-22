@@ -60,6 +60,11 @@ type ContentItem struct {
 	Format     Format
 	Meta       Metadata
 	Body       string
+	ID         string
+	Slug       string
+	URL        string
+	OutputPath string
+	Aliases    []string
 	node       *yaml.Node
 }
 
