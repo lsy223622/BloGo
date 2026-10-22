@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/lsy223622/BloGo/internal/content"
 )
 
 func TestGateA(t *testing.T) {
@@ -13,7 +15,11 @@ func TestGateA(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(items) != 4 || items[0].ID != "page:about" || items[0].Published != nil || items[1].ID != "page:lab" || items[1].PubliclyListed() || items[1].Stats || items[3].ID != "post:welcome" || len(items[3].Meta.Categories) != 1 {
+	byID := map[string]*content.ContentItem{}
+	for _, item := range items {
+		byID[item.ID] = item
+	}
+	if len(items) != 7 || byID["page:about"].Published != nil || byID["page:lab"].PubliclyListed() || byID["page:lab"].Stats || len(byID["post:welcome"].Meta.Categories) != 1 || byID["post:review-copy"].PubliclyListed() || !byID["post:review-copy"].Stats || byID["post:first-steps"] == nil || byID["post:release-notes"] == nil {
 		t.Fatalf("%+v", items)
 	}
 }
