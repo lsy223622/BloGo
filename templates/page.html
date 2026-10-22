@@ -1,0 +1,61 @@
+{{define "page"}}<!doctype html>
+<html lang="{{.Site.Language}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{if eq .Page.ID "home"}}{{.Site.Title}}{{else}}{{.Page.Title}} · {{.Site.Title}}{{end}}</title>
+<meta name="description" content="{{if .Summary}}{{.Summary}}{{else}}{{.Site.Title}}{{end}}">
+<link rel="canonical" href="{{.Canonical}}">
+<meta property="og:title" content="{{.Page.Title}}">
+<meta property="og:url" content="{{.Canonical}}">
+<meta property="og:type" content="{{if eq .Page.Kind "post"}}article{{else}}website{{end}}">
+<meta property="og:description" content="{{.Summary}}">
+{{if .Page.NoIndex}}<meta name="robots" content="noindex">{{end}}
+<link rel="alternate" type="application/rss+xml" title="{{.Site.Title}}" href="/rss.xml">
+{{with index .Assets "theme.css"}}<link rel="stylesheet" href="{{.}}">{{end}}
+{{with index .Assets "highlight.css"}}<link rel="stylesheet" href="{{.}}">{{end}}
+{{with index .Assets "katex.css"}}<link rel="stylesheet" href="{{.}}">{{end}}
+{{with index .Assets "theme.js"}}<script src="{{.}}" defer></script>{{end}}
+{{with index .Assets "katex.js"}}<script src="{{.}}" defer></script>{{end}}
+</head>
+<body data-page-id="{{.Page.ID}}" data-site-timezone="{{.Site.Timezone}}">
+<a class="skip-link" href="#main">跳至正文</a>
+<div class="site-grid">
+<nav class="left-nav" aria-label="主导航">
+<a class="brand" href="/" aria-label="{{.Site.Title}} 首页">B<span class="brand-dot">.</span></a>
+<a href="/">首页</a><a href="/categories/">分类</a><a href="/tags/">标签</a><a href="/archives/">归档</a><a href="/updates/">更新</a>
+<button type="button" class="theme-toggle" aria-label="切换深浅色主题" hidden>◐</button>
+</nav>
+<main id="main" class="reading-column">
+<header class="site-header"><a href="/">{{.Site.Title}}</a><span>{{with index .Extra "tagline"}}{{.}}{{else}}记录，思考，分享。{{end}}</span></header>
+{{if .Page.Content}}
+<article>
+<header class="article-header"><p class="eyebrow">{{if eq .Page.Kind "post"}}文章{{else}}独立页面{{end}}</p><h1>{{.Page.Title}}</h1>
+<div class="metadata">{{with .Page.Published}}<time datetime="{{.Format "2006-01-02T15:04:05Z07:00"}}">{{date .}}</time>{{end}}{{range .Page.Content.Meta.Categories}} <a href="/categories/{{.}}/">{{category .}}</a>{{end}}<span class="page-views" data-views-for="{{.Page.ID}}" hidden></span></div></header>
+{{if .TOC}}<details class="toc"><summary>文章目录</summary><ol>{{range .TOC}}<li data-level="{{.Level}}"><a href="#{{.ID}}">{{.Text}}</a></li>{{end}}</ol></details>{{end}}
+<div class="prose">{{.Body}}</div>
+{{with .Page.Content.Meta.Extra.links}}<div class="friend-grid">{{range .}}<a class="friend-card" href="{{.url}}" rel="noopener"><img src="{{.image}}" alt="" width="48" height="48" loading="lazy"><span><strong>{{.name}}</strong><small>{{.description}}</small></span></a>{{end}}</div>{{end}}
+{{if .Page.Content.Meta.Tags}}<div class="term-cloud">{{range .Page.Content.Meta.Tags}}<a href="/tags/{{.}}/">{{tag .}}</a>{{end}}</div>{{end}}
+<nav class="article-navigation" aria-label="文章导航">{{with .Page.Previous}}<a href="{{.URL}}">← {{.Meta.Title}}</a>{{end}}{{with .Page.Next}}<a href="{{.URL}}">{{.Meta.Title}} →</a>{{end}}</nav>
+</article>
+{{else}}
+<header class="list-header"><p class="eyebrow">{{.Site.Title}}</p><h1>{{if eq .Page.ID "home"}}最近的记录{{else}}{{.Page.Title}}{{end}}</h1></header>
+{{if eq .Page.ID "not-found"}}<p>这个地址没有对应的页面。</p><p><a href="/">返回首页 →</a></p>{{end}}
+{{if .Page.Terms}}<div class="term-list">{{range .Page.Terms}}<a href="{{.URL}}"><span>{{.Name}}</span><small>{{.Count}} 篇</small></a>{{end}}</div>{{end}}
+<div class="post-list">{{range .Page.Items}}{{$item := .}}<article class="post-item"><div class="post-copy"><h2><a href="{{.URL}}">{{.Meta.Title}}</a></h2><p>{{summary .}}</p><div class="metadata">{{range .Meta.Categories}}<a href="/categories/{{.}}/">{{category .}}</a> · {{end}}{{with .Published}}<time>{{date .}}</time>{{end}}</div></div>{{with cover .}}<a class="cover" href="{{$item.URL}}"><img src="{{.}}" alt="" width="160" height="120" loading="lazy"></a>{{end}}</article>{{end}}</div>
+{{if gt .Page.Pager.Total 1}}<nav class="pagination" aria-label="分页">{{with .Page.Pager.PreviousURL}}<a href="{{.}}">← 上一页</a>{{end}}<span>{{.Page.Pager.Number}} / {{.Page.Pager.Total}}</span>{{with .Page.Pager.NextURL}}<a href="{{.}}">下一页 →</a>{{end}}</nav>{{end}}
+{{end}}
+<footer class="site-footer"><a href="/rss.xml">RSS</a><span>由 BloGo 构建</span></footer>
+</main>
+<aside class="right-sidebar" aria-label="站点信息">
+<section class="profile"><div class="profile-mark">B.</div><h2>{{.Site.Title}}</h2><p>{{with index .Extra "description"}}{{.}}{{else}}把值得留下的事情，认真写下来。{{end}}</p></section>
+{{if .Recent}}<section><h2>最近更新</h2><ul>{{range .Recent}}<li><a href="{{.URL}}">{{.Meta.Title}}</a></li>{{end}}</ul></section>{{end}}
+{{if .Categories}}<section><h2>分类</h2><ul>{{range .Categories}}<li><a href="{{.URL}}">{{.Name}}</a><small>{{.Count}}</small></li>{{end}}</ul></section>{{end}}
+{{if .Tags}}<section><h2>标签</h2><div class="term-cloud">{{range .Tags}}<a href="{{.URL}}">{{.Name}}</a>{{end}}</div></section>{{end}}
+<section class="popular" hidden><h2>热门文章</h2><ul data-popular-posts></ul></section>
+</aside>
+</div>
+{{if .Page.StatsEnabled}}{{with index .Assets "stats.js"}}<script src="{{.}}" data-page-id="{{$.Page.ID}}" data-site-timezone="{{$.Site.Timezone}}" defer></script>{{end}}{{end}}
+</body>
+</html>
+{{end}}

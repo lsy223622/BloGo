@@ -13,7 +13,7 @@ func TestGateA(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(items) != 3 || items[0].ID != "page:about" || items[0].Published != nil || items[1].ID != "page:lab" || items[1].PubliclyListed() || items[1].Stats || items[2].ID != "post:welcome" || len(items[2].Meta.Categories) != 1 {
+	if len(items) != 4 || items[0].ID != "page:about" || items[0].Published != nil || items[1].ID != "page:lab" || items[1].PubliclyListed() || items[1].Stats || items[3].ID != "post:welcome" || len(items[3].Meta.Categories) != 1 {
 		t.Fatalf("%+v", items)
 	}
 }
