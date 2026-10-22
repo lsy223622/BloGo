@@ -1,0 +1,14 @@
+site:
+  base_url: https://blog.example.com
+  title: BloGo
+  timezone: Asia/Shanghai
+stats:
+  listen_addr: 127.0.0.1:8787
+  manifest_path: /srv/blog/current/meta/manifest.json
+  database_path: /var/lib/blog-stats/database/stats.db
+  visitor_key_path: /var/lib/blog-stats/visitor.key
+  public_output: /srv/blog-stats-public/stats.json
+  private_output: /srv/blog-stats-private/report.html
+  event_retention: 72h
+  visitor_retention: 168h
+  report_interval: 5m

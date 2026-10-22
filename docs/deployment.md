@@ -26,6 +26,8 @@ source 文件按组可读，构建账户加入 `blog-source`。把发布内容�
 
 数据库单独放在 database 子目录，允许 SQLite 管理 WAL/SHM；访客密钥保存在上一级，仅 `blog-stats` 可读写的 0600 文件，报告账户无需读取或替换密钥。不要将数据库、密钥、source 或私有报告配置成 Nginx alias。
 
+统计服务使用 UMask=0007，新建数据库为 0660，WAL/SHM 继承相同权限。已有数据库由管理员核对 owner/group/mode，程序不替现有文件更改权限。报告账户需在 database 目录创建 SQLite 辅助文件；示例 report unit 同时把主数据库文件单独标记为 ReadOnlyPaths，业务连接另使用 mode=ro 与 query_only。应用主进程不需要 root。
+
 ## 安装和发布
 
 管理员安装 Go 编译的 `blog` 到 `/usr/local/bin/blog`，将示例 `deploy/config-build.yaml` 复制为 `/etc/blog/build.yaml`，修改站点 origin 与路径，配置文件仅保存路径和普通站点数据，不嵌入密钥。使用对应非 root 账户运行：
@@ -57,3 +59,19 @@ Nginx root 指向 current/public；公开统计只精确 alias 到 `/data/stats.
 先执行独立构建，再准备官方 Nginx 镜像，运行 `scripts/verify-nginx.ps1`。脚本只创建带 `blogo.validation=true` 标签的专用容器：普通 nginx 用户、只读根文件系统、仅发布到 127.0.0.1 的动态端口，退出时核对标签并清理该容器。它不会操作其他容器或线上 Nginx；默认 Go 测试不依赖 Docker 或外网。
 
 2026-10-23 实测 Docker 29.9.2、Nginx 1.30.6（官方镜像 digest `sha256:47928bf67eb62a1863cb08d9ecb52d3e704304ba614eaee17884204677702951`），`nginx -t` 与 13 项 HTTP/缓存断言通过，Nginx UID 为 101。结果写入本地 `output/validation/nginx.json`。Linux 非特权测试另验证了真实本地文件系统上的原子发布、失败保留、版本保留、元数据权限和人工回滚。
+
+统计配置见 `deploy/config-stats.yaml`，安装为 `/etc/blog/stats.yaml` 后审查 `blog-stats.service`、`blog-report.service` 和 `blog-report.timer`。先发布站点、启动 collector 产生数据库，再运行一次报告，最后启用五分钟 timer。统计仅监听回环地址；公网只接入 Nginx。报告输出不属于 release，重新发布博客不会覆盖它们。
+
+完整本地验收在 Windows 交叉编译 Linux 二进制后运行：
+
+```powershell
+$env:GOOS='linux'
+$env:GOARCH='amd64'
+$env:CGO_ENABLED='0'
+go build -o .superpowers/linux/blog ./cmd/blog
+go test -c ./internal/integration -o .superpowers/linux/integration.test
+./scripts/verify-stack.ps1
+Remove-Item Env:GOOS,Env:GOARCH,Env:CGO_ENABLED
+```
+
+脚本使用 network=none 的专用容器，不发布端口，源码只读挂载，测试数据在容器 /tmp 的真实 Linux 文件系统。容器 root 仅设置临时账户权限，builder、collector、reporter 和 Nginx 分别以不同非 root UID 运行。测试覆盖 WAL/SHM 权限、私有文件拒绝读取、API 代理、统计停机/重启、报告失败恢复和活动数据库备份恢复，结果写入 `output/validation/stack.json`。

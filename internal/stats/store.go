@@ -27,6 +27,14 @@ func OpenWriter(ctx context.Context, path string) (*Store, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0770); err != nil {
 		return nil, err
 	}
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0660)
+	if err == nil {
+		if err = file.Close(); err != nil {
+			return nil, err
+		}
+	} else if !os.IsExist(err) {
+		return nil, err
+	}
 	return open(ctx, path, true)
 }
 func OpenReader(ctx context.Context, path string) (*Store, error) { return open(ctx, path, false) }

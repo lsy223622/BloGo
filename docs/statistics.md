@@ -34,3 +34,21 @@ blog report --config /etc/blog/stats.yaml
 报告为单次命令，由 `blog-report.timer` 每五分钟启动。修改 `stats.report_interval` 时应同步修改 timer 的 `OnUnitActiveSec`。公开 JSON 含 Manifest 版本、所有启用统计的 Public 页面的累计 PV，以及仅文章的近 30 天排名。私有 HTML 提供每日趋势、7 天/30 天/累计 PV 与每日 UV 之和、来源总量和逐页来源，保留 Unlisted 和已删除 ID 的历史数据。跨日 UV 求和不代表跨日去重人数。
 
 报告通过两个目标的进程锁避免竞争，短只读事务完成后才渲染。输出先写同目录临时文件，写入前再次核对 build_id；版本变化和生成失败保留旧结果。两个输出分别原子替换。公开内容按本轮 Manifest 过滤，可见性变化在下一次成功刷新后反映；上次成功报告可暂时保留旧信息。
+
+## 备份与恢复
+
+管理员使用 SQLite CLI 的 `VACUUM INTO` 或 SQLite online backup API 获取一致快照。不能单独复制运行中的主数据库文件；WAL 中可能还有已提交数据。备份文件名必须尚不存在，目标目录只授予备份账户访问，SQL 字符串中的单引号按 SQL 规则双写。
+
+```sh
+umask 077
+sqlite3 /var/lib/blog-stats/database/stats.db \
+  "VACUUM INTO '/private-backup/stats-20261023.db';"
+cp -p /var/lib/blog-stats/visitor.key /private-backup/visitor-20261023.key
+sqlite3 /private-backup/stats-20261023.db 'PRAGMA integrity_check;'
+```
+
+访客密钥启动后保持不变，备份时保留原密钥和站点时区配置；不得向日志或报告输出密钥。内容源、模板、静态资源、分类标签和配置另行备份，Git 记录可恢复代码但不包含统计数据。
+
+恢复时由管理员停止 collector 与报告 timer，确认没有打开数据库的进程，保留当前数据库和密钥作为回退副本。把备份恢复到配置的 database_path，恢复对应 visitor.key；主数据库 owner/group 为 blog-stats:blog-reports、0660，密钥 owner 为 blog-stats、0600，database 目录为 2770。只有确认所有连接已关闭后才清理旧 WAL/SHM，避免把旧辅助文件与恢复数据库混用。启动 collector，运行一次报告，核对累计数据、生成版本与新事件，再恢复 timer。
+
+自动测试在 collector 活动时执行相同的 VACUUM INTO SQL，恢复数据库和密钥后验证 integrity_check、旧事件去重、同日 UV 延续、新 PV 与报告刷新。部署栈另以不同非 root 账户演练停机、重启和恢复。

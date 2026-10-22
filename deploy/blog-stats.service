@@ -1,0 +1,27 @@
+[Unit]
+Description=BloGo loopback statistics collector
+After=local-fs.target
+ConditionPathExists=/srv/blog/current/meta/manifest.json
+
+[Service]
+Type=simple
+User=blog-stats
+Group=blog-reports
+SupplementaryGroups=blog-meta
+ExecStart=/usr/local/bin/blog stats --config /etc/blog/stats.yaml
+Restart=on-failure
+RestartSec=5
+UMask=0007
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadOnlyPaths=/srv/blog/current/meta /etc/blog
+ReadWritePaths=/var/lib/blog-stats
+InaccessiblePaths=/srv/blog/source /srv/blog-stats-private
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+IPAddressDeny=any
+IPAddressAllow=localhost
+
+[Install]
+WantedBy=multi-user.target
