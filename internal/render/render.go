@@ -14,6 +14,8 @@ import (
 	"github.com/lsy223622/BloGo/internal/content"
 	"github.com/lsy223622/BloGo/internal/markdown"
 	"github.com/lsy223622/BloGo/internal/site"
+	"github.com/tdewolff/minify/v2"
+	minihtml "github.com/tdewolff/minify/v2/html"
 )
 
 type Renderer struct {
@@ -66,6 +68,10 @@ func New(c *config.Config, pages []*site.Page, tax *content.Taxonomies, assets m
 		"tag":      func(id string) string { return tax.Tags[id].Name },
 	}
 	t := template.New("blog").Funcs(funcs)
+	// Compact the template shell before inserting trusted author bodies. Register
+	// only HTML so inline script/style text is kept byte-for-byte.
+	compact := minify.New()
+	compact.Add("text/html", &minihtml.Minifier{KeepComments: true, KeepDocumentTags: true, KeepEndTags: true, KeepQuotes: true, TemplateDelims: minihtml.GoTemplateDelims})
 	err := fs.WalkDir(os.DirFS(c.Paths.Templates), ".", func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -80,6 +86,10 @@ func New(c *config.Config, pages []*site.Page, tax *content.Taxonomies, assets m
 			return fmt.Errorf("unsupported template: %s", p)
 		}
 		data, err := os.ReadFile(filepath.Join(c.Paths.Templates, filepath.FromSlash(p)))
+		if err != nil {
+			return err
+		}
+		data, err = compact.Bytes("text/html", data)
 		if err != nil {
 			return err
 		}

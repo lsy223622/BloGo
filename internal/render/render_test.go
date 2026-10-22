@@ -109,3 +109,35 @@ func TestHTMLFragmentLayout(t *testing.T) {
 		t.Fatal("bad template accepted")
 	}
 }
+
+func TestTemplateShellCompactionPreservesAuthorCodeAndBody(t *testing.T) {
+	c, err := config.Load("../../config.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	c.Paths.Templates = dir
+	script := "const exact = '  keep  ';\nwindow.value = exact;"
+	style := ".custom { color: red; }\n"
+	source := "{{define \"page\"}}<!doctype html>\n<html>\n    <head><script>" + script + "</script><style>" + style + "</style></head>\n    <body>{{.Body}}</body>\n</html>{{end}}"
+	if err = os.WriteFile(filepath.Join(dir, "page.html"), []byte(source), 0600); err != nil {
+		t.Fatal(err)
+	}
+	item := &content.ContentItem{ID: "page:raw", Format: content.HTML, Layout: "page", Body: "<div>  author spacing  </div><script>const raw = ' x '; </script>"}
+	p := &site.Page{ID: item.ID, Content: item}
+	r, err := New(c, []*site.Page{p}, &content.Taxonomies{}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := r.Render(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(out)
+	if strings.Contains(s, "<html>\n") {
+		t.Fatal("template shell not compacted")
+	}
+	if !strings.Contains(s, script) || !strings.Contains(s, style) || !strings.Contains(s, item.Body) {
+		t.Fatalf("author source changed: %s", s)
+	}
+}
