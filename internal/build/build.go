@@ -44,6 +44,10 @@ func Build(c *config.Config, output string, preview bool) (*Result, error) {
 	if !filepath.IsAbs(output) {
 		output = filepath.Join(filepath.Dir(c.FilePath()), output)
 	}
+	return buildSite(c, output, preview)
+}
+
+func buildSite(c *config.Config, output string, preview bool) (*Result, error) {
 	parent := filepath.Dir(output)
 	if err := os.MkdirAll(parent, 0755); err != nil {
 		return nil, err
@@ -138,6 +142,9 @@ func Build(c *config.Config, output string, preview bool) (*Result, error) {
 	if err = writeFile(stage, "meta/manifest.json", append(data, '\n')); err != nil {
 		return nil, err
 	}
+	if err = privateMetadata(filepath.Join(stage, "meta")); err != nil {
+		return nil, err
+	}
 	warnings, err := validateOutput(public, pages, model.Site.BaseURL, model.Build.StrictLinks)
 	if err != nil {
 		return nil, invalid(err)
@@ -145,10 +152,29 @@ func Build(c *config.Config, output string, preview bool) (*Result, error) {
 	if err = snapshot.Close(); err != nil {
 		return nil, err
 	}
+	if err = os.Chmod(stage, 0755); err != nil {
+		return nil, err
+	}
 	if err = replaceOutput(stage, output); err != nil {
 		return nil, err
 	}
 	return &Result{Output: output, Manifest: manifest, Warnings: warnings}, nil
+}
+
+func privateMetadata(root string) error {
+	if err := os.Chmod(root, 0750); err != nil {
+		return err
+	}
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		if err = os.Chmod(filepath.Join(root, entry.Name()), 0640); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func replaceOutput(stage, output string) error {

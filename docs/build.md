@@ -17,3 +17,9 @@ go run ./cmd/blog build --config config.yaml --output output/site
 先在同级临时目录完整生成和校验，成功后才替换独立输出目录。已有非空输出必须能识别为先前的 BloGo 构建，防止把任意目录当成输出清理。重建不保留已删除内容的旧文件，失败保留旧输出。此命令不切换生产 current。
 
 本地图片、脚本、样式和字体等资源缺失会失败。指向不存在内容的链接默认记录警告，`build.strict_links: true` 时失败。校验只查输出集合，不对外部链接发起网络请求。
+
+Linux 上 `blog publish --config config.yaml` 先取得 current 目标的非阻塞进程锁，构建和复核完整 release，再通过同一文件系统内的临时符号链接与原子 rename 切换 current。锁覆盖整个发布，竞争者明确失败；进程退出释放原生锁，锁文件保留以避免 inode 竞争。
+
+release 根目录与 public 可遍历读取，meta 为 0750、内部文件为 0640；部署时让构建器主组为 Manifest 读取组，统计/报告用户加入该组，Nginx 不加入。成功切换后按 `keep_releases` 保留完整版本，始终包含当前版本；清理错误作为警告保留供处理，不撤回已成功的切换。
+
+人工回滚先停止 watcher，核对保留版本的 public 与 meta，再用新的临时链接原子替换 current。确认源内容与选定版本一致后恢复 watcher，避免随后自动发布覆盖回滚结果。部署命令及权限设置见后续部署说明。

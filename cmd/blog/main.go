@@ -67,6 +67,18 @@ func run(args []string, out, errOut io.Writer) int {
 		fmt.Fprintf(out, "Built %d pages in %s (%s)\n", len(result.Manifest.Pages), result.Output, result.Manifest.BuildID)
 		return 0
 	}
+	if err == nil && command == "publish" {
+		result, publishErr := build.Publish(c)
+		if publishErr != nil {
+			fmt.Fprintf(errOut, "blog publish: %v\n", publishErr)
+			return 1
+		}
+		for _, warning := range result.Warnings {
+			fmt.Fprintf(errOut, "warning: %s\n", warning)
+		}
+		fmt.Fprintf(out, "Published %s\n", result.Output)
+		return 0
+	}
 	if err == nil {
 		err = c.Validate(command, output)
 	}
