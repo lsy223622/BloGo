@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"github.com/lsy223622/BloGo/internal/build"
 	"github.com/lsy223622/BloGo/internal/config"
 	"io"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() { os.Exit(run(os.Args[1:], os.Stdout, os.Stderr)) }
@@ -77,6 +80,15 @@ func run(args []string, out, errOut io.Writer) int {
 			fmt.Fprintf(errOut, "warning: %s\n", warning)
 		}
 		fmt.Fprintf(out, "Published %s\n", result.Output)
+		return 0
+	}
+	if err == nil && command == "watch" {
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		if err = build.Watch(ctx, c, errOut); err != nil {
+			fmt.Fprintf(errOut, "blog watch: %v\n", err)
+			return 1
+		}
 		return 0
 	}
 	if err == nil {

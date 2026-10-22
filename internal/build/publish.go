@@ -29,10 +29,14 @@ func Publish(c *config.Config) (*Result, error) {
 		return nil, err
 	}
 	defer lock.Close()
-	return publishLocked(c)
+	fingerprint, err := Scan(c, false)
+	if err != nil {
+		return nil, err
+	}
+	return publishLocked(c, fingerprint)
 }
 
-func publishLocked(c *config.Config) (*Result, error) {
+func publishLocked(c *config.Config, fingerprint string) (*Result, error) {
 	for _, dir := range []string{c.Paths.Staging, c.Paths.Releases} {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return nil, err
@@ -43,7 +47,7 @@ func publishLocked(c *config.Config) (*Result, error) {
 		return nil, err
 	}
 	defer os.RemoveAll(candidate)
-	result, err := buildSite(c, candidate, false)
+	result, err := buildSite(c, candidate, false, fingerprint)
 	if err != nil {
 		return nil, err
 	}

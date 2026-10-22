@@ -23,3 +23,5 @@ Linux 上 `blog publish --config config.yaml` 先取得 current 目标的非阻�
 release 根目录与 public 可遍历读取，meta 为 0750、内部文件为 0640；部署时让构建器主组为 Manifest 读取组，统计/报告用户加入该组，Nginx 不加入。成功切换后按 `keep_releases` 保留完整版本，始终包含当前版本；清理错误作为警告保留供处理，不撤回已成功的切换。
 
 人工回滚先停止 watcher，核对保留版本的 public 与 meta，再用新的临时链接原子替换 current。确认源内容与选定版本一致后恢复 watcher，避免随后自动发布覆盖回滚结果。部署命令及权限设置见后续部署说明。
+
+`blog watch --config config.yaml` 持有同一个生产锁，默认每 60 秒串行扫描。重启时从 current Manifest 读取最后成功指纹；无变化时跳过。确定性内容错误按失败指纹抑制重复构建和日志，输入变化后重试；I/O 或发布故障会在后续轮次重试，同类日志每分钟最多一条。手动 publish 可主动重建相同输入。配置内容会重新加载，修改 current 目标需要重启 watcher 以重新取得对应锁。

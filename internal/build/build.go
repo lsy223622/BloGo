@@ -44,10 +44,14 @@ func Build(c *config.Config, output string, preview bool) (*Result, error) {
 	if !filepath.IsAbs(output) {
 		output = filepath.Join(filepath.Dir(c.FilePath()), output)
 	}
-	return buildSite(c, output, preview)
+	fingerprint, err := Scan(c, preview)
+	if err != nil {
+		return nil, err
+	}
+	return buildSite(c, output, preview, fingerprint)
 }
 
-func buildSite(c *config.Config, output string, preview bool) (*Result, error) {
+func buildSite(c *config.Config, output string, preview bool, fingerprint string) (*Result, error) {
 	parent := filepath.Dir(output)
 	if err := os.MkdirAll(parent, 0755); err != nil {
 		return nil, err
@@ -57,10 +61,6 @@ func buildSite(c *config.Config, output string, preview bool) (*Result, error) {
 		return nil, err
 	}
 	defer os.RemoveAll(stage)
-	fingerprint, err := Scan(c, preview)
-	if err != nil {
-		return nil, err
-	}
 	snapshot, err := CreateSnapshot(c, stage, fingerprint, preview)
 	if err != nil {
 		return nil, err
