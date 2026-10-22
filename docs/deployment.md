@@ -75,3 +75,5 @@ Remove-Item Env:GOOS,Env:GOARCH,Env:CGO_ENABLED
 ```
 
 脚本使用 network=none 的专用容器，不发布端口，源码只读挂载，测试数据在容器 /tmp 的真实 Linux 文件系统。容器 root 仅设置临时账户权限，builder、collector、reporter 和 Nginx 分别以不同非 root UID 运行。测试覆盖 WAL/SHM 权限、私有文件拒绝读取、API 代理、统计停机/重启、报告失败恢复和活动数据库备份恢复，结果写入 `output/validation/stack.json`。
+
+Windows 可运行 `./scripts/verify-clean.ps1`：从当前 Git HEAD 导出全新源码目录，按 go.mod/go.sum 编译、运行全部 Go 测试并构建示例站点。该检查复用已下载的 Go 模块缓存，首次环境仍需能够下载锁定依赖。页面数和完整构建耗时写入 `output/validation/clean-checkout.json`；它测量示例站点，不代表大型内容库性能。

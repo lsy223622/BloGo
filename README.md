@@ -21,3 +21,30 @@ go run ./cmd/blog build --config config.yaml --output output/site
 示例内容包含 Public 文章、无日期独立页面、Unlisted HTML 和无日期 Draft。分类标签的键使用 ASCII 稳定 ID，`name` 保留中文、大小写和 emoji。HTML 正文与 Markdown 源码在解析时保持原文。
 
 完整静态构建、输入快照与链接校验见 [构建说明](docs/build.md)，默认主题与自托管资源见 [主题说明](docs/theme.md)。
+
+本地预览包含 Draft，使用独立目录并在成功重建后刷新浏览器：
+
+```sh
+go run ./cmd/blog dev --config config.yaml --output output/dev --listen 127.0.0.1:8080
+```
+
+六个命令为 build、dev、publish、watch、stats、report。Linux 的 publish/watch 生成完整 release 后原子切换 current，stats 只监听回环，report 单次生成公开 JSON 与私有 HTML。安装示例分别使用 `deploy/config-build.yaml` 和 `deploy/config-stats.yaml`。
+
+- [配置与命令](docs/configuration.md)
+- [内容模型与输出](docs/content-output.md)
+- [Markdown 支持](docs/markdown-support.md)
+- [Linux 部署与回滚](docs/deployment.md)
+- [统计、指标与备份恢复](docs/statistics.md)
+- [安全与权限验收](docs/security-validation.md)
+
+静态页面由 Nginx 提供；统计停机不阻断阅读。公开统计每五分钟刷新，只含本轮 Manifest 中启用统计的 Public 页面。Unlisted 明细与已删除页面历史留在私有报告。浏览器使用每日随机标识，服务端只持久化按日期 HMAC 的访客摘要与来源主机名。
+
+完整测试：
+
+```sh
+go test ./...
+go vet ./...
+node --test scripts/stats-browser.test.cjs
+```
+
+Go 测试不依赖外网或 Docker。Linux 权限、原子发布和恢复的隔离验收步骤见部署说明；生产域名、TLS、systemd 安装与 Nginx 重载由管理员按实际环境审查执行。
