@@ -114,6 +114,14 @@ func run(args []string, out, errOut io.Writer) int {
 		}
 		return 0
 	}
+	if err == nil && command == "report" {
+		if err = stats.GenerateReport(context.Background(), c); err != nil {
+			fmt.Fprintf(errOut, "blog report: %v\n", err)
+			return 1
+		}
+		fmt.Fprintf(out, "Generated %s and %s\n", c.Stats.PublicOutput, c.Stats.PrivateOutput)
+		return 0
+	}
 	if err == nil {
 		err = c.Validate(command, output)
 	}
