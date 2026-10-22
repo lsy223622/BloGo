@@ -2,6 +2,8 @@ package stats
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -224,5 +226,30 @@ func TestLockDeadlineDoesNotPartiallyWrite(t *testing.T) {
 	var count int
 	if err = s.db.QueryRow("SELECT count(*) FROM event_seen").Scan(&count); err != nil || count != 0 {
 		t.Fatal("timed-out record partially written")
+	}
+}
+
+func TestUnknownSchemaAndInvalidKeyAreNotReinitialized(t *testing.T) {
+	for _, version := range []int{0, 2} {
+		s, path := openStore(t)
+		if _, err := s.db.Exec("PRAGMA user_version=" + fmt.Sprint(version)); err != nil {
+			t.Fatal(err)
+		}
+		s.Close()
+		if other, err := OpenWriter(context.Background(), path); err == nil {
+			other.Close()
+			t.Fatalf("accepted schema version %d", version)
+		}
+	}
+	path := filepath.Join(t.TempDir(), "key")
+	if err := os.WriteFile(path, []byte("invalid"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LoadOrCreateKey(path); err == nil {
+		t.Fatal("invalid key replaced")
+	}
+	data, err := os.ReadFile(path)
+	if err != nil || string(data) != "invalid" {
+		t.Fatal("invalid key was changed")
 	}
 }

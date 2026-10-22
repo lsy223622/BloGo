@@ -12,6 +12,7 @@ import (
 	"github.com/lsy223622/BloGo/internal/build"
 	"github.com/lsy223622/BloGo/internal/config"
 	"github.com/lsy223622/BloGo/internal/preview"
+	"github.com/lsy223622/BloGo/internal/stats"
 )
 
 func main() { os.Exit(run(os.Args[1:], os.Stdout, os.Stderr)) }
@@ -100,6 +101,15 @@ func run(args []string, out, errOut io.Writer) int {
 		defer stop()
 		if err = preview.Dev(ctx, c, output, listen, errOut); err != nil {
 			fmt.Fprintf(errOut, "blog dev: %v\n", err)
+			return 1
+		}
+		return 0
+	}
+	if err == nil && command == "stats" {
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		if err = stats.Serve(ctx, c, errOut); err != nil {
+			fmt.Fprintf(errOut, "blog stats: %v\n", err)
 			return 1
 		}
 		return 0
