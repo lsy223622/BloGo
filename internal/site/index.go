@@ -14,6 +14,9 @@ type SiteIndex struct {
 	ByUpdated   []*content.ContentItem
 	PublicPosts []*content.ContentItem
 	Pages       []*content.ContentItem
+	ByCategory  map[string][]*content.ContentItem
+	ByTag       map[string][]*content.ContentItem
+	ByMonth     map[string][]*content.ContentItem
 }
 
 func NewIndex(items []*content.ContentItem, preview bool) (*SiteIndex, error) {
