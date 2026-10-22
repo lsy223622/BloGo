@@ -3,10 +3,60 @@ package build
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
 
 	"github.com/lsy223622/BloGo/internal/filelock"
 )
+
+func TestPublishRetainsOnlyDirectlyReferencedRecentHashes(t *testing.T) {
+	c := buildFixture(t)
+	c.Build.KeepReleases = 1
+	put(t, c.Paths.Templates, "page.html", `{{define "page"}}<html><head><link rel="stylesheet" href="{{index .Assets "theme.css"}}"></head><body>{{.Body}}</body></html>{{end}}`)
+	first, err := Publish(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	html, err := os.ReadFile(filepath.Join(first.Output, "public/index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	asset := regexp.MustCompile(`assets/theme\.[0-9a-f]{16}\.css`).Find(html)
+	if len(asset) == 0 {
+		t.Fatal("missing old reference")
+	}
+	old, err := os.ReadFile(filepath.Join(first.Output, "public", string(asset)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	put(t, c.Paths.Static, "assets/theme.css", "body{color:blue}")
+	second, err := Publish(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	retained, err := os.ReadFile(filepath.Join(second.Output, "public", string(asset)))
+	if err != nil || string(retained) != string(old) {
+		t.Fatalf("in-flight hash lost: %v", err)
+	}
+	put(t, c.Paths.Static, "assets/theme.css", "body{color:green}")
+	third, err := Publish(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = os.Stat(filepath.Join(third.Output, "public", string(asset))); !os.IsNotExist(err) {
+		t.Fatal("inherited unreferenced hash retained forever")
+	}
+	if err = os.Remove(filepath.Join(c.Paths.Static, "assets/stats.js")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = Publish(c); err == nil {
+		t.Fatal("missing collector published")
+	}
+	current, err := filepath.EvalSymlinks(c.Paths.Current)
+	if err != nil || current != third.Output {
+		t.Fatal("missing collector switched current")
+	}
+}
 
 func TestPublishAtomicVersionAndRetention(t *testing.T) {
 	c := buildFixture(t)

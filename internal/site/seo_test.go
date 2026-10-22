@@ -62,7 +62,7 @@ func TestFeedSitemapNavigationAndRedirects(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(redirects), `"/old.html" "/post/a/";`) || !strings.Contains(string(redirects), `"/post/a/index.html" "/post/a/";`) {
+	if !strings.Contains(string(redirects), `"~^/old\\.html$" "/post/a/";`) || !strings.Contains(string(redirects), `"~^/post/a/index\\.html$" "/post/a/";`) {
 		t.Fatalf("redirects %s", redirects)
 	}
 	if strings.Contains(string(redirects), "return 200") {

@@ -3,6 +3,7 @@ id: welcome
 title: 欢迎使用 BloGo
 published: 2026-10-23
 status: public
+aliases: [/POSTS/WELCOME/, /Legacy.html]
 categories: [hardware]
 tags: [esp32]
 extra:

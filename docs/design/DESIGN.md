@@ -2,7 +2,7 @@
 
 -   文档版本：1.2
 -   适用范围：V1
--   状态：实施基线；明确标注为"待实现时验证"的项目不阻塞基础架构开发
+-   状态：V1 实现与本地 Gate E 验收完成；生产环境配置由部署方核对
 -   配套文档：[`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
 
 ## 1. 文档目的与规范优先级
@@ -354,7 +354,7 @@ HTML 页面采用目录式 URL，根路径为 `/`，其他规范 URL 均以 `/` 
 
 可分页列表的后续页在其基础路径后追加 `page/{n}/`。第一页只使用基础 URL；页码和年月段由系统生成。已存在页面的无尾斜杠 URL 以 301 跳转到带尾斜杠形式，保留 query；生产 Nginx 与本地预览行为一致。canonical、内部生成链接、Feed、Sitemap 和 Manifest 都使用规范 URL，页面重定向响应不采集 PV。直接访问页面的 `index.html` 时也 301 到其目录 URL。
 
-系统路由、内容路由、aliases 和静态文件共用输出冲突检查。`/api/`、`/data/`、`/assets/` 为保留前缀，以上系统页面路由、分页路由以及 `/rss.xml`、`/sitemap.xml`、`/robots.txt` 为保留输出；内容不能占用。static 文件可以使用 `/assets/`，但不能覆盖生成文件或占用 `/api/`、`/data/` 的服务映射。历史 aliases 可以保留 `.html` 等旧形式，但须独立进行安全校验、冲突检测和 Nginx 字面值转义，目标只能是对应内容的当前规范 URL。
+系统路由、内容路由、aliases 和静态文件共用输出冲突检查。`/api/`、`/data/`、`/assets/` 为保留前缀，以上系统页面路由、分页路由以及 `/rss.xml`、`/sitemap.xml`、`/robots.txt` 为保留输出；内容不能占用。static 文件可以使用 `/assets/`，但不能覆盖生成文件或占用 `/api/`、`/data/` 的服务映射。历史 aliases 可以保留 `.html` 等旧形式，路径区分大小写；须独立进行安全校验、冲突检测。Nginx map 规则使用经转义并首尾锚定的大小写敏感正则，目标只能是对应内容的当前规范 URL。
 
 路由选择参考 [Hugo URL management](https://gohugo.io/content-management/urls/)、[Ghost routing](https://docs.ghost.org/themes/routing) 和 [Hexo permalinks](https://hexo.io/docs/permalinks)。[WordPress](https://developer.wordpress.org/reference/functions/user_trailingslashit/) 会依据配置添加或去除尾斜杠，并无所有博客必须一致的规则；本项目固定一种形式，减少重复 URL 与部署规则。
 
@@ -578,6 +578,8 @@ releases/<release-id>/
 `current`。不能原地覆盖当前公开目录。按 `build.keep_releases` 保留完整版本用于人工回滚；清理在切换成功后进行，始终保留当前版本。人工回滚前停止 watcher，确认内容源与所选版本一致后再恢复自动发布。
 
 Nginx 只从 current 提供页面与资源，HTML 使用需重新验证的缓存策略，带内容哈希的资源可长期缓存。回滚版本的文件由 release 目录保存。
+
+发布切换前，将 current 及其余最近完整版本中、最多 `keep_releases` 个已有版本的 HTML 直接引用的受管哈希 CSS/JS 复制到新 public/assets。只复制 theme/highlight/stats 的对应哈希文件并核对内容摘要，避免旧 HTML 的在途资源请求在切换后失败。不会递归继承先前已复制但未被其 HTML 引用的哈希，因此保留窗口随版本推进而回收；即使 keep_releases=1 也保留刚切换前一版的直接引用。更旧的客户端可能需要刷新。HTML 与 Manifest 仍整版切换，独立 build/dev 仍只输出本轮快照。
 
 ### 11.2 Manifest 契约
 
@@ -966,6 +968,8 @@ API。不要声称它们被浏览器安全策略隔离。任何 CSP
 -   根据部署地区决定是否需要统计告知或同意机制。
 
 任何验证结果导致已有契约需要变化时，先更新本文件和实施计划，再合并实现。
+
+2026-10-23 本地验证：Go 1.27.0（Windows 与交叉编译的 Linux amd64）、modernc.org/sqlite 1.61.0 / SQLite 3.54.1、Nginx 1.30.6。Goldmark、Chroma、自托管 KaTeX 0.19.0、Standalone tokenizer、WAL/SHM 及取消锁等待均有自动测试；Edge 验证桌面/移动阅读与实际 Beacon 字段。18 页示例的一次完整扫描约 33 ms、完整构建约 318 ms，干净 Git 源码编译后的独立构建约 418 ms；这些是本机示例测量，不代表大型内容库性能。生产 Go/Nginx/systemd 环境、TLS 与部署地区的统计告知由实际部署方确认。
 
 ## 19. V1 完成标准
 

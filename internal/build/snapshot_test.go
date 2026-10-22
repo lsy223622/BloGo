@@ -16,6 +16,11 @@ func buildFixture(t *testing.T) *config.Config {
 	put(t, root, "content/posts/a.md", "---\ntitle: A\nstatus: public\npublished: 2026-10-23\n---\nBody.")
 	put(t, root, "templates/page.html", `{{define "page"}}<!doctype html><html><head><title>{{.Page.Title}}</title></head><body>{{.Body}}{{range .Page.Items}}<a href="{{.URL}}">{{.Meta.Title}}</a>{{end}}</body></html>{{end}}`)
 	put(t, root, "static/assets/theme.css", "body { color: black; }")
+	collector, err := os.ReadFile("../../static/assets/stats.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	put(t, root, "static/assets/stats.js", string(collector))
 	put(t, root, "taxonomies.yaml", "schema_version: 1\n")
 	c, err := config.Load(filepath.Join(root, "config.yaml"))
 	if err != nil {

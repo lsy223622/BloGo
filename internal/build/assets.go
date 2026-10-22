@@ -75,6 +75,14 @@ func CopyAssets(source, public string, pages []*site.Page) (map[string]string, e
 	if err != nil {
 		return nil, err
 	}
+	for _, page := range pages {
+		if page.StatsEnabled {
+			if _, ok := files["assets/stats.js"]; !ok {
+				return nil, fmt.Errorf("assets/stats.js: required for pages with statistics enabled")
+			}
+			break
+		}
+	}
 	assets := map[string]string{}
 	generated := map[string][]byte{}
 	managed := map[string][]byte{"highlight.css": []byte(markdown.HighlightCSS())}

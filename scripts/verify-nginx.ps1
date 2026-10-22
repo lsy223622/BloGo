@@ -6,7 +6,7 @@ $ErrorActionPreference = 'Stop'
 $repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $siteRoot = (Resolve-Path -LiteralPath (Join-Path $repositoryRoot $OutputDirectory)).Path
 $nginxConfig = Join-Path $repositoryRoot 'deploy/nginx.conf'
-$redirectConfig = Join-Path $repositoryRoot 'deploy/redirects.conf'
+$redirectConfig = Join-Path $siteRoot 'meta/redirects.conf'
 $containerName = 'blogo-nginx-test-' + [guid]::NewGuid().ToString('N')
 $containerID = $null
 $handler = [System.Net.Http.HttpClientHandler]::new()
@@ -30,6 +30,10 @@ try {
     $cases = @(
         @{ Path = '/'; Status = 200 },
         @{ Path = '/posts/welcome/'; Status = 200 },
+        @{ Path = '/POSTS/WELCOME/?q=1'; Status = 301; Location = '/posts/welcome/?q=1' },
+        @{ Path = '/Legacy.html'; Status = 301; Location = '/posts/welcome/' },
+        @{ Path = '/legacy.html'; Status = 301; Location = '/posts/first-steps/' },
+        @{ Path = '/LegacyXhtml'; Status = 404 },
         @{ Path = '/posts/welcome?x=1'; Status = 301; Location = '/posts/welcome/?x=1' },
         @{ Path = '/posts/welcome/index.html?q=x%20y'; Status = 301; Location = '/posts/welcome/?q=x%20y' },
         @{ Path = '/index.html'; Status = 301; Location = '/' },

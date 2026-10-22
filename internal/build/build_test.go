@@ -150,3 +150,22 @@ func TestTrackingCoversManifestAndStandaloneRequiresBody(t *testing.T) {
 		t.Fatalf("untracked standalone changed: %q %v", data, err)
 	}
 }
+
+func TestMissingCollectorPreservesPreviousBuild(t *testing.T) {
+	c := buildFixture(t)
+	out := filepath.Join(t.TempDir(), "site")
+	first, err := Build(c, out, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = os.Remove(filepath.Join(c.Paths.Static, "assets/stats.js")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = Build(c, out, false); err == nil {
+		t.Fatal("missing mandatory collector built successfully")
+	}
+	old, err := site.ReadManifest(filepath.Join(out, "meta/manifest.json"))
+	if err != nil || old.BuildID != first.Manifest.BuildID {
+		t.Fatal("missing collector replaced old build")
+	}
+}

@@ -3,6 +3,7 @@ title: 从一篇文章开始
 published: 2026-10-21
 updated: 2026-10-23T18:00:00+08:00
 status: public
+aliases: [/legacy.html]
 categories: [tech]
 tags: [esp32]
 ---

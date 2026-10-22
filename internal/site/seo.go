@@ -3,6 +3,7 @@ package site
 import (
 	"encoding/xml"
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -165,7 +166,7 @@ func Redirects(pages []*Page) ([]byte, error) {
 	}
 	var b strings.Builder
 	for _, from := range keys(redirects) {
-		b.WriteString(strconv.Quote(from))
+		b.WriteString(strconv.Quote("~^" + regexp.QuoteMeta(from) + "$"))
 		b.WriteByte(' ')
 		b.WriteString(strconv.Quote(redirects[from]))
 		b.WriteString(";\n")
