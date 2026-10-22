@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -26,5 +28,16 @@ func TestCommandRouting(t *testing.T) {
 		if (code == 0) != wantOK {
 			t.Fatalf("args %v: exit %d", args, code)
 		}
+	}
+}
+
+func TestBuildCommand(t *testing.T) {
+	output := filepath.Join(t.TempDir(), "site")
+	var out, errOut bytes.Buffer
+	if code := run([]string{"build", "--config", "../../config.yaml", "--output", output}, &out, &errOut); code != 0 {
+		t.Fatalf("exit %d: %s", code, &errOut)
+	}
+	if _, err := os.Stat(filepath.Join(output, "public/index.html")); err != nil {
+		t.Fatal(err)
 	}
 }

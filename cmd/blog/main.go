@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/lsy223622/BloGo/internal/build"
 	"github.com/lsy223622/BloGo/internal/config"
 	"io"
 	"os"
@@ -54,6 +55,18 @@ func run(args []string, out, errOut io.Writer) int {
 		return 1
 	}
 	c, err := config.Load(*configFile)
+	if err == nil && command == "build" {
+		result, buildErr := build.Build(c, output, false)
+		if buildErr != nil {
+			fmt.Fprintf(errOut, "blog build: %v\n", buildErr)
+			return 1
+		}
+		for _, warning := range result.Warnings {
+			fmt.Fprintf(errOut, "warning: %s\n", warning)
+		}
+		fmt.Fprintf(out, "Built %d pages in %s (%s)\n", len(result.Manifest.Pages), result.Output, result.Manifest.BuildID)
+		return 0
+	}
 	if err == nil {
 		err = c.Validate(command, output)
 	}
