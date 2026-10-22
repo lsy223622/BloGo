@@ -211,10 +211,17 @@ func (c *Config) Validate(command, output string) error {
 			return fail("stats.database_path", "required")
 		}
 		if command == "stats" {
-			if err := readable(c.Stats.VisitorKeyPath, false); err != nil {
-				return fail("stats.visitor_key_path", err.Error())
+			if c.Stats.VisitorKeyPath == "" {
+				return fail("stats.visitor_key_path", "required")
 			}
-			if err := privateKey(c.Stats.VisitorKeyPath); err != nil {
+			if err := readable(c.Stats.VisitorKeyPath, false); err != nil {
+				if !os.IsNotExist(err) {
+					return fail("stats.visitor_key_path", err.Error())
+				}
+				if err = writableTarget(c.Stats.VisitorKeyPath, false); err != nil {
+					return fail("stats.visitor_key_path", err.Error())
+				}
+			} else if err = privateKey(c.Stats.VisitorKeyPath); err != nil {
 				return fail("stats.visitor_key_path", err.Error())
 			}
 		}
