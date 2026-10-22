@@ -107,7 +107,7 @@ func Sitemap(pages []*Page, baseURL string) ([]byte, error) {
 
 // Redirects emits literal map entries for Nginx's $uri -> canonical-path map.
 // The deployment return directive appends the original query string.
-func Redirects(pages []*Page) ([]byte, error) {
+func RedirectRules(pages []*Page) (map[string]string, error) {
 	canonical := map[string]bool{}
 	for _, p := range pages {
 		canonical[p.URL] = true
@@ -154,6 +154,14 @@ func Redirects(pages []*Page) ([]byte, error) {
 				}
 			}
 		}
+	}
+	return redirects, nil
+}
+
+func Redirects(pages []*Page) ([]byte, error) {
+	redirects, err := RedirectRules(pages)
+	if err != nil {
+		return nil, err
 	}
 	var b strings.Builder
 	for _, from := range keys(redirects) {

@@ -17,9 +17,10 @@ import (
 )
 
 type Result struct {
-	Output   string
-	Manifest *site.Manifest
-	Warnings []string
+	Output    string
+	Manifest  *site.Manifest
+	Warnings  []string
+	Redirects map[string]string
 }
 type ValidationError struct{ Err error }
 
@@ -127,6 +128,10 @@ func buildSite(c *config.Config, output string, preview bool, fingerprint string
 	if err != nil {
 		return nil, invalid(err)
 	}
+	rules, err := site.RedirectRules(pages)
+	if err != nil {
+		return nil, invalid(err)
+	}
 	for _, file := range []struct {
 		name string
 		data []byte
@@ -158,7 +163,7 @@ func buildSite(c *config.Config, output string, preview bool, fingerprint string
 	if err = replaceOutput(stage, output); err != nil {
 		return nil, err
 	}
-	return &Result{Output: output, Manifest: manifest, Warnings: warnings}, nil
+	return &Result{Output: output, Manifest: manifest, Warnings: warnings, Redirects: rules}, nil
 }
 
 func privateMetadata(root string) error {

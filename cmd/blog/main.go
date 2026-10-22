@@ -4,12 +4,14 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/lsy223622/BloGo/internal/build"
-	"github.com/lsy223622/BloGo/internal/config"
 	"io"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/lsy223622/BloGo/internal/build"
+	"github.com/lsy223622/BloGo/internal/config"
+	"github.com/lsy223622/BloGo/internal/preview"
 )
 
 func main() { os.Exit(run(os.Args[1:], os.Stdout, os.Stderr)) }
@@ -35,11 +37,13 @@ func run(args []string, out, errOut io.Writer) int {
 	flags.SetOutput(errOut)
 	configFile := flags.String("config", "config.yaml", "configuration file")
 	var output string
+	var listen string
 	if command == "build" {
 		flags.StringVar(&output, "output", "", "independent output directory (required)")
 	}
 	if command == "dev" {
 		flags.StringVar(&output, "output", "output/dev", "independent preview output directory")
+		flags.StringVar(&listen, "listen", "127.0.0.1:8080", "loopback preview IP and port")
 	}
 	flags.Usage = func() {
 		fmt.Fprintf(out, "Usage: blog %s [options]\n", command)
@@ -87,6 +91,15 @@ func run(args []string, out, errOut io.Writer) int {
 		defer stop()
 		if err = build.Watch(ctx, c, errOut); err != nil {
 			fmt.Fprintf(errOut, "blog watch: %v\n", err)
+			return 1
+		}
+		return 0
+	}
+	if err == nil && command == "dev" {
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		if err = preview.Dev(ctx, c, output, listen, errOut); err != nil {
+			fmt.Fprintf(errOut, "blog dev: %v\n", err)
 			return 1
 		}
 		return 0
