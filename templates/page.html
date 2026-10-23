@@ -49,7 +49,7 @@
 {{if .TOC}}<details class="toc"><summary>文章目录</summary><ol>{{range .TOC}}<li data-level="{{.Level}}"><a href="#{{.ID}}">{{.Text}}</a></li>{{end}}</ol></details>{{end}}
 <div class="prose">{{.Body}}</div>
 {{with .Page.Content.Meta.Extra.links}}<div class="friend-grid">{{range .}}<a class="friend-card" href="{{.url}}" rel="noopener"><img src="{{.image}}" alt="" width="48" height="48" loading="lazy"><span><strong>{{.name}}</strong><small>{{.description}}</small></span></a>{{end}}</div>{{end}}
-{{if .Page.Content.Meta.Tags}}<div class="term-cloud">{{range .Page.Content.Meta.Tags}}<a href="/tags/{{.}}/">{{tag .}}</a>{{end}}</div>{{end}}
+{{if .Page.Content.Meta.Tags}}<div class="term-cloud">{{range .Page.Content.Meta.Tags}}{{$id := .}}{{$linked := false}}{{range $.Tags}}{{if eq .ID $id}}{{$linked = true}}{{end}}{{end}}{{if $linked}}<a href="/tags/{{.}}/">{{tag .}}</a>{{else}}<span>{{tag .}}</span>{{end}}{{end}}</div>{{end}}
 <nav class="article-navigation" aria-label="文章导航">{{with .Page.Previous}}<a href="{{.URL}}">← {{.Meta.Title}}</a>{{end}}{{with .Page.Next}}<a href="{{.URL}}">{{.Meta.Title}} →</a>{{end}}</nav>
 </article>
 {{else}}

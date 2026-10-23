@@ -178,6 +178,39 @@ func TestPartialNavigationKeepsPageIdentityInsideMain(t *testing.T) {
 	}
 }
 
+func TestTagsWithoutPublicPagesRemainReadableWithoutBrokenLinks(t *testing.T) {
+	c, err := config.Load("../../config.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tax := &content.Taxonomies{Tags: map[string]content.Tag{
+		"shared":      {Name: "Shared"},
+		"hidden-only": {Name: "Hidden only"},
+	}}
+	for _, visibility := range []content.Status{content.Unlisted, content.Draft} {
+		t.Run(string(visibility), func(t *testing.T) {
+			item := &content.ContentItem{ID: "post:entry", Format: content.Markdown, Meta: content.Metadata{Tags: []string{"shared", "hidden-only"}}}
+			p := &site.Page{ID: item.ID, URL: "/posts/entry/", Content: item, Visibility: visibility}
+			pages := []*site.Page{p, {ID: "tags", Terms: []site.Term{{ID: "shared", Name: "Shared", URL: "/tags/shared/"}}}}
+			r, err := New(c, pages, tax, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			out, err := r.Render(p)
+			if err != nil {
+				t.Fatal(err)
+			}
+			s := string(out)
+			if strings.Contains(s, `href="/tags/hidden-only/"`) || !strings.Contains(s, `<span>Hidden only</span>`) {
+				t.Fatal("tag without a public page must remain a readable label")
+			}
+			if !strings.Contains(s, `<a href="/tags/shared/">Shared</a>`) {
+				t.Fatal("public tag link missing")
+			}
+		})
+	}
+}
+
 func TestStandaloneTokenizerAndOriginalText(t *testing.T) {
 	body := `<!doctype html><html><head><meta name="robots" content="noindex, follow"></head><body><!-- </body> --><script>const fake = "</body>";</script><p>Original  spacing</p></body></html>`
 	script := `<script src="/assets/stats.js" defer></script>`
