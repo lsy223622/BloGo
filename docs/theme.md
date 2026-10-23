@@ -4,9 +4,9 @@
 
 `templates/` 的 `.html` / `.tmpl` 文件定义 `page` 模板。普通元数据始终交给 `html/template` 转义；只有已处理的 Markdown 或作者 HTML 正文进入可信 HTML 插入点。Standalone 不套主题模板，保留原文；Unlisted Standalone 必须在 head 内自行声明 robots noindex。
 
-可选站点 `extra` 字段为 `tagline` 和 `description`。内容 `extra.cover` 是封面资源 URL；`extra.links` 是友链列表，每项包含 `name`、`url`、`image`、`description`。这些值仍为普通模板数据，不执行表达式。
+可选站点 `extra.tagline` 用于页头副标题。内容 `extra.cover` 是封面资源 URL；`extra.links` 是友链列表，每项包含 `name`、`url`、`image`、`description`。这些值仍为普通模板数据，不执行表达式。
 
-导航与侧栏使用原始浅青色 SVG，保留 780×720 viewBox 和图形比例，深色底衬用于保证浅色主题中的识别度；favicon 使用同一原件。导航显示当前栏目，“关于”和“友链”只列出对应的 Public 页面，移动端链接组可换行。
+导航 logo 使用原始 SVG 作为遮罩，保留 780×720 viewBox 和图形比例，透明背景上的填充跟随主题强调色；favicon 使用原始 SVG。导航显示当前栏目，“关于”和“友链”只列出对应的 Public 页面，移动端链接组可换行。RSS 和构建署名位于信息栏末尾，移动端随信息栏排在正文之后。
 
 表格单元格保留可读的最小列宽，窄屏在表格内部横向滚动；长 URL 可在单元格内换行，避免原生 HTML 表格被压成逐字排列。
 

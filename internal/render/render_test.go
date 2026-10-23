@@ -92,8 +92,8 @@ func TestLogoAndSectionNavigation(t *testing.T) {
 			t.Fatal(err)
 		}
 		s := string(data)
-		if !strings.Contains(s, `src="/images/logo.svg"`) || strings.Contains(s, `>B.</div>`) {
-			t.Fatal("original logo not applied")
+		if !strings.Contains(s, `class="brand-mark" aria-hidden="true"`) {
+			t.Fatal("navigation logo missing")
 		}
 		if !strings.Contains(s, `href="/about/"`) || !strings.Contains(s, `href="/links/"`) {
 			t.Fatal("page navigation missing")
