@@ -20,12 +20,15 @@
         const path = new URL(url,location.href).pathname;
         return !!el?.closest('[data-no-swup]') || /\.[a-z0-9]+$/i.test(path) && !/\.html?$/i.test(path);
       },
-      plugins:[new window.SwupScrollPlugin({animateScroll:false})]
+      plugins:[new window.SwupScrollPlugin({animateScroll:{betweenPages:false,samePageWithHash:true,samePage:false}})]
     });
   } catch (_) { return; }
 
   swup.hooks.on('visit:start', visit => {
     if (motion.matches) visit.animation.animate = false;
+  });
+  swup.hooks.before('link:anchor', visit => {
+    visit.scroll.animate = !motion.matches;
   });
   // Replacement hooks propagate failures to Swup's normal-navigation fallback.
   swup.hooks.replace('content:replace', async (visit, args, replace) => {
