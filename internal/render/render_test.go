@@ -122,6 +122,31 @@ func TestLogoAndSectionNavigation(t *testing.T) {
 	}
 }
 
+func TestMermaidScriptOnlyLoadsOnDiagramPages(t *testing.T) {
+	c, err := config.Load("../../config.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		body    string
+		diagram bool
+	}{{"```mermaid\nflowchart LR\nA --> B\n```", true}, {"```go\nprintln(1)\n```", false}} {
+		item := &content.ContentItem{ID: "post:diagram", Format: content.Markdown, Body: test.body}
+		p := &site.Page{ID: item.ID, URL: "/posts/diagram/", Content: item}
+		r, err := New(c, []*site.Page{p}, &content.Taxonomies{}, map[string]string{"mermaid.js": "/vendor/mermaid.js"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		out, err := r.Render(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.Contains(string(out), `src="/vendor/mermaid.js"`) != test.diagram {
+			t.Fatalf("conditional diagram script: %s", out)
+		}
+	}
+}
+
 func TestStandaloneTokenizerAndOriginalText(t *testing.T) {
 	body := `<!doctype html><html><head><meta name="robots" content="noindex, follow"></head><body><!-- </body> --><script>const fake = "</body>";</script><p>Original  spacing</p></body></html>`
 	script := `<script src="/assets/stats.js" defer></script>`

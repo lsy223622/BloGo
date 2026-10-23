@@ -1,6 +1,7 @@
 site:
   base_url: https://blog.example.com
   title: BloGo
+  subtitle: 记录，思考，分享。
   timezone: Asia/Shanghai
   language: zh-CN
 paths:

@@ -37,6 +37,7 @@ type view struct {
 	Recent             []*content.ContentItem
 	Assets             map[string]string
 	AboutURL, LinksURL string
+	Mermaid            bool
 }
 
 func New(c *config.Config, pages []*site.Page, tax *content.Taxonomies, assets map[string]string) (*Renderer, error) {
@@ -132,6 +133,7 @@ func (r *Renderer) Render(p *site.Page) ([]byte, error) {
 		v.Body = template.HTML(body.HTML)
 		v.Summary = body.Summary
 		v.TOC = body.TOC
+		v.Mermaid = body.Mermaid
 	}
 	for _, page := range r.pages {
 		if page.ID == "page:about" && page.Visibility == content.Public {

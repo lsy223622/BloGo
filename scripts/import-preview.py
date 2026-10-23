@@ -141,9 +141,9 @@ def import_preview(source, older, attachments, output, project):
         'tags':{'notes':{'name':'随笔 / Notes'},'life':{'name':'生活'},'blog':{'name':'博客 · Typecho'}}}
     (output/'taxonomies.yaml').write_text(json.dumps(taxonomy,ensure_ascii=False,indent=2),encoding='utf-8')
     template_path=Path(__import__('os').path.relpath(project/'templates',output)).as_posix()
-    config={'site':{'base_url':'http://127.0.0.1:8771','title':site['title'],'timezone':'Asia/Shanghai','language':'zh-CN'},
+    config={'site':{'base_url':'http://127.0.0.1:8771','title':site['title'],'subtitle':site['description'],'timezone':'Asia/Shanghai','language':'zh-CN'},
         'paths':{'source':'content','templates':template_path,'static':'static','taxonomies':'taxonomies.yaml'},
-        'build':{'page_size':5,'strict_links':False},'extra':{'tagline':site['description'],'description':site['description']}}
+        'build':{'page_size':5,'strict_links':False}}
     (output/'config.yaml').write_text(json.dumps(config,ensure_ascii=False,indent=2),encoding='utf-8')
     if any((source/name).read_bytes()!=data for name,data in originals.items()): raise RuntimeError('source changed during import; retry against a stable working tree')
     report={'schema_version':1,'source':str(source),'older_source':str(older) if older else None,'site':site,'entries':entries,

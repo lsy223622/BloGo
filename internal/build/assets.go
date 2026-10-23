@@ -110,7 +110,7 @@ func CopyAssets(source, public string, pages []*site.Page) (map[string]string, e
 		generated[file] = compact
 		assets[name] = "/" + file
 	}
-	for _, entry := range []struct{ key, file string }{{"katex.css", "vendor/katex-0.19.0/katex.min.css"}, {"katex.js", "vendor/katex-0.19.0/katex.min.js"}} {
+	for _, entry := range []struct{ key, file string }{{"katex.css", "vendor/katex-0.19.0/katex.min.css"}, {"katex.js", "vendor/katex-0.19.0/katex.min.js"}, {"mermaid.js", "vendor/mermaid-12.2.0/mermaid.min.js"}} {
 		if _, ok := files[entry.file]; ok {
 			assets[entry.key] = "/" + entry.file
 		}

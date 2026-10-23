@@ -45,7 +45,7 @@ go run ./cmd/blog dev --config config.yaml --output output/dev --listen 127.0.0.
 ```sh
 go test ./...
 go vet ./...
-node --test scripts/stats-browser.test.cjs
+node --test scripts/stats-browser.test.cjs scripts/theme-browser.test.cjs
 ```
 
 Go 测试不依赖外网或 Docker。Linux 权限、原子发布和恢复的隔离验收步骤见部署说明；生产域名、TLS、systemd 安装与 Nginx 重载由管理员按实际环境审查执行。

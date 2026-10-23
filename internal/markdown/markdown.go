@@ -27,6 +27,7 @@ type Heading struct {
 type Result struct {
 	HTML, Summary string
 	TOC           []Heading
+	Mermaid       bool
 }
 
 func Convert(body, explicitSummary string, maxChars int) (Result, error) {
@@ -44,6 +45,9 @@ func Convert(body, explicitSummary string, maxChars int) (Result, error) {
 		if h, ok := n.(*ast.Heading); ok {
 			id, _ := h.AttributeString("id")
 			result.TOC = append(result.TOC, Heading{h.Level, string(id.([]byte)), plainInline(h, source, false)})
+		}
+		if fence, ok := n.(*ast.FencedCodeBlock); ok && string(fence.Language(source)) == "mermaid" {
+			result.Mermaid = true
 		}
 		if (n.Kind() == ast.KindParagraph || n.Kind() == ast.KindTextBlock) && result.Summary == "" {
 			result.Summary = plainInline(n, source, true)
@@ -128,6 +132,10 @@ func (*codeRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
 func renderCode(w util.BufWriter, source []byte, n ast.Node, enter bool) (ast.WalkStatus, error) {
 	if !enter {
 		return ast.WalkContinue, nil
+	}
+	if fence, ok := n.(*ast.FencedCodeBlock); ok && string(fence.Language(source)) == "mermaid" {
+		_, err := fmt.Fprintf(w, `<pre class="mermaid">%s</pre>`, stdhtml.EscapeString(string(n.Lines().Value(source))))
+		return ast.WalkSkipChildren, err
 	}
 	lexer := lexers.Fallback
 	if fenced, ok := n.(*ast.FencedCodeBlock); ok {

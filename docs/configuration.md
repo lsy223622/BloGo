@@ -6,6 +6,7 @@
 | --- | --- |
 | `site.base_url` | 必填 HTTP(S) origin，不含路径、查询、片段或凭据；与浏览器实际 origin 一致 |
 | `site.title` | 构建必填；用于页面、Feed 与报告标题 |
+| `site.subtitle` | 页头副标题，可留空 |
 | `site.timezone` | `Asia/Shanghai`，IANA 时区；内置 tzdata |
 | `site.language` | `zh-CN` |
 | `paths.source/templates/static` | 构建输入根目录，普通目录且相互独立 |

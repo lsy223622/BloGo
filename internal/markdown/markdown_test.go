@@ -52,3 +52,13 @@ func TestSummaryFromTightListSkipsImageOnlyParagraph(t *testing.T) {
 		}
 	}
 }
+
+func TestMermaidFencePreservesEscapedDiagramSource(t *testing.T) {
+	r, err := Convert("```mermaid\nflowchart LR\nA[\"<b>text</b>\"] --> B\n```\n", "", 160)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !r.Mermaid || !strings.Contains(r.HTML, `<pre class="mermaid">`) || !strings.Contains(r.HTML, `&lt;b&gt;text&lt;/b&gt;`) || strings.Contains(r.HTML, `<b>text</b>`) {
+		t.Fatalf("diagram source must remain escaped and readable: %s", r.HTML)
+	}
+}

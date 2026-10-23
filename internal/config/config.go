@@ -47,6 +47,7 @@ func (c *Config) FileDigest() [32]byte { return c.digest }
 type Site struct {
 	BaseURL  string `yaml:"base_url"`
 	Title    string `yaml:"title"`
+	Subtitle string `yaml:"subtitle"`
 	Timezone string `yaml:"timezone"`
 	Language string `yaml:"language"`
 }

@@ -66,6 +66,25 @@ func TestLoadDefaultsAndCommandBoundaries(t *testing.T) {
 	}
 }
 
+func TestSitePresentationSettings(t *testing.T) {
+	file := fixture(t, "build:\n  page_size: 7\n")
+	data, err := os.ReadFile(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data = []byte(strings.Replace(string(data), "title: 测试", "title: 测试\n  subtitle: 记录与分享", 1))
+	if err = os.WriteFile(file, data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	c, err := Load(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.Site.Title != "测试" || c.Site.Subtitle != "记录与分享" || c.Build.PageSize != 7 {
+		t.Fatalf("presentation settings: %+v %+v", c.Site, c.Build)
+	}
+}
+
 func TestPublishingPathRelations(t *testing.T) {
 	c, err := Load(fixture(t, ""))
 	if err != nil {
