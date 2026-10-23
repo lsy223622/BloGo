@@ -100,6 +100,14 @@
     const main = document.querySelector('#main');
     if (!main || main === activeMain) return;
     activeMain = main;
+    main.querySelectorAll('.friend-card img').forEach(image => {
+      const useDefault = () => {
+        image.removeEventListener('error', useDefault);
+        image.src = '/images/avatar-default.svg';
+      };
+      image.addEventListener('error', useDefault);
+      if (image.complete && image.naturalWidth === 0) useDefault();
+    });
     diagrams = [...main.querySelectorAll('pre.mermaid')].map(source => {
       const output = document.createElement('div');
       output.className = 'mermaid-diagram';

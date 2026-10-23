@@ -53,7 +53,7 @@
 <nav class="article-navigation" aria-label="文章导航">{{with .Page.Previous}}<a href="{{.URL}}">← {{.Meta.Title}}</a>{{end}}{{with .Page.Next}}<a href="{{.URL}}">{{.Meta.Title}} →</a>{{end}}</nav>
 </article>
 {{else}}
-<header class="list-header"><h1>{{if eq .Page.ID "home"}}最近的记录{{else}}{{.Page.Title}}{{end}}</h1></header>
+<header class="list-header"><h1>{{if eq .Page.ID "home"}}最新文章{{else}}{{.Page.Title}}{{end}}</h1></header>
 {{if eq .Page.ID "not-found"}}<p>这个地址没有对应的页面。</p><p><a href="/">返回首页 →</a></p>{{end}}
 {{if .Page.Terms}}<div class="term-list">{{range .Page.Terms}}<a href="{{.URL}}"><span>{{.Name}}</span><small>{{.Count}} 篇</small></a>{{end}}</div>{{end}}
 <div class="post-list">{{range .Page.Items}}{{$item := .}}<article class="post-item"><div class="post-copy"><h2><a href="{{.URL}}">{{.Meta.Title}}</a></h2><p>{{summary .}}</p><div class="metadata">{{range .Meta.Categories}}<a href="/categories/{{.}}/">{{category .}}</a> · {{end}}{{with .Published}}<time>{{date .}}</time>{{end}}</div></div>{{with cover .}}<a class="cover" href="{{$item.URL}}"><img src="{{.}}" alt="" width="160" height="120" loading="lazy"></a>{{end}}</article>{{end}}</div>
