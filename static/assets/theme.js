@@ -2,14 +2,41 @@
   "use strict";
   const root = document.documentElement;
   const icons = {
-    system: '<path d="M12 2v20M12 7a5 5 0 0 0 0 10M5 5l1.5 1.5M2 12h2M5 19l1.5-1.5M12 4a8 8 0 0 1 0 16c4-3 4-13 0-16Z"/>',
     light: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/>',
     dark: '<path d="M20.5 14a8.5 8.5 0 0 1-10.5-10.5A8.5 8.5 0 1 0 20.5 14Z"/>',
     wrapOff: '<path d="M3 5h18M3 10h18M3 15h17m-3-3 3 3-3 3M3 20h11"/>',
     wrapOn: '<path d="M3 5h18M3 10h13a4 4 0 0 1 0 8h-4m3-3-3 3 3 3M3 15h4M3 20h4"/>',
     copy: '<rect x="8" y="3" width="12" height="14" rx="2"/><path d="M16 17v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h3"/>'
   };
+  icons.system = `<defs><clipPath id="blogo-sun-half"><path d="M0 0H24L0 24Z"/></clipPath><clipPath id="blogo-moon-half"><path d="M24 0V24H0Z"/></clipPath></defs><g clip-path="url(#blogo-sun-half)">${icons.light}</g><g clip-path="url(#blogo-moon-half)">${icons.dark}</g><path d="M3 21 21 3"/>`;
   const icon = name => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]}</svg>`;
+  let tooltipOwner, tooltipTimer;
+  const hideTooltip = () => {
+    clearTimeout(tooltipTimer);
+    if (tooltipOwner) tooltipOwner.classList.remove('tooltip-visible');
+    tooltipOwner = null;
+  };
+  const showTooltip = button => {
+    if (root.dataset.input !== 'touch') return;
+    hideTooltip();
+    tooltipOwner = button;
+    button.classList.add('tooltip-visible');
+    tooltipTimer = setTimeout(() => button.classList.remove('tooltip-visible'),1200);
+  };
+  document.addEventListener('pointerdown', event => {
+    root.dataset.input = event.pointerType === 'touch' || event.pointerType === 'pen' ? 'touch' : 'mouse';
+    if (tooltipOwner && !tooltipOwner.contains(event.target)) hideTooltip();
+  });
+  document.addEventListener('pointermove', event => {
+    if (event.pointerType === 'mouse' && root.dataset.input === 'touch') {
+      root.dataset.input = 'mouse';
+      hideTooltip();
+    }
+  });
+  document.addEventListener('keydown', () => { root.dataset.input = 'keyboard'; hideTooltip(); });
+  document.addEventListener('contextmenu', event => {
+    if (root.dataset.input === 'touch' && event.target.closest('.icon-button')) event.preventDefault();
+  });
   const diagrams = [...document.querySelectorAll('pre.mermaid')].map(source => {
     const output = document.createElement('div');
     output.className = 'mermaid-diagram';
@@ -57,6 +84,7 @@
     toggle.addEventListener("click", () => {
       preference = {system:'light',light:'dark',dark:'system'}[preference];
       applyTheme();
+      showTooltip(toggle);
       try { localStorage.setItem("blogo-theme", preference); } catch (_) {}
     });
     media.addEventListener("change", () => { if (preference === 'system') applyTheme(); });
@@ -80,15 +108,20 @@
       wrap.innerHTML = icon(enabled ? 'wrapOn' : 'wrapOff');
       wrap.dataset.tooltip = enabled ? '关闭自动换行' : '开启自动换行';
       wrap.setAttribute('aria-label',wrap.dataset.tooltip);
+      showTooltip(wrap);
     });
     const copy = button('copy','复制代码');
+    let feedbackTimer;
     copy.addEventListener('click', async () => {
+      clearTimeout(feedbackTimer);
+      showTooltip(copy);
       try {
         await navigator.clipboard.writeText(source);
         copy.dataset.tooltip = '已复制';
       } catch (_) { copy.dataset.tooltip = '复制失败'; }
       copy.setAttribute('aria-label',copy.dataset.tooltip);
-      setTimeout(() => { copy.dataset.tooltip = '复制代码'; copy.setAttribute('aria-label','复制代码'); },1600);
+      if (tooltipOwner === copy) showTooltip(copy);
+      feedbackTimer = setTimeout(() => { copy.dataset.tooltip = '复制代码'; copy.setAttribute('aria-label','复制代码'); },1600);
     });
     frame.append(tools);
   });
