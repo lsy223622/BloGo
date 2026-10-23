@@ -63,7 +63,7 @@
 <aside class="right-sidebar" aria-label="站点信息">
 {{if .Recent}}<section><h2>最近更新</h2><ul>{{range .Recent}}<li><a href="{{.URL}}">{{.Meta.Title}}</a></li>{{end}}</ul></section>{{end}}
 {{if .Tags}}<section><h2>标签</h2><div class="term-cloud sidebar-tags" tabindex="0" role="region" aria-label="标签">{{range .Tags}}<a href="{{.URL}}">{{.Name}}</a>{{end}}</div></section>{{end}}
-{{with .Extra.profile}}<section class="site-profile"><h2>关于站长</h2><ul class="profile-links">{{range .}}<li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/images/profile.svg#{{.type}}"></use></svg>{{if eq .type "email"}}<span data-email="{{obfuscateEmail .label}}">邮箱（需启用 JavaScript 查看）</span>{{else}}<span>{{if .url}}<a href="{{.url}}" rel="noopener">{{.label}}</a>{{else}}{{.label}}{{end}}</span>{{end}}</li>{{end}}</ul></section>{{end}}
+{{with .Extra.profile}}<section class="site-profile"><h2>关于站长</h2><ul class="profile-links">{{range .}}<li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/images/profile.svg#{{.type}}"></use></svg>{{if eq .type "email"}}<span data-email="{{obfuscateEmail .label}}"></span>{{else}}<span>{{if .url}}<a href="{{.url}}" rel="noopener">{{.label}}</a>{{else}}{{.label}}{{end}}</span>{{end}}</li>{{end}}</ul></section>{{end}}
 <section class="popular" hidden><h2>热门文章</h2><ul data-popular-posts></ul></section>
 <footer class="site-footer"><a href="/rss.xml">RSS</a><a href="https://github.com/lsy223622/BloGo">由 BloGo 构建</a></footer>
 </aside>
