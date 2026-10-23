@@ -7,7 +7,7 @@ import (
 )
 
 func TestMarkdownFeaturesAndStableTOC(t *testing.T) {
-	source := "# 标题\n\n## Repeat\n\n## Repeat\n\n正文 **强调** [链接](/about/) ![图](/images/a.png).\n\n> 引用\n\n- [x] 完成\n- [ ] 待办\n\n| a | b |\n| - | - |\n| 1 | 2 |\n\n~~删除~~[^1]\n\n[^1]: 脚注\n\n```go\nfmt.Println(42)\n```\n\n<div class=\"custom\">HTML</div>\n\n公式 $x < y$。\n\n$$\nE = mc^2\n$$\n"
+	source := "[TOC]\n\n# 标题\n\n## Repeat\n\n## Repeat\n\n正文 **强调** [链接](/about/) ![图](/images/a.png).\n\n> 引用\n\n- [x] 完成\n- [ ] 待办\n\n| a | b |\n| - | - |\n| 1 | 2 |\n\n~~删除~~[^1]\n\n[^1]: 脚注\n\n```go\nfmt.Println(42)\n```\n\n<div class=\"custom\">HTML</div>\n\n公式 $x < y$。\n\n$$\nE = mc^2\n$$\n"
 	a, err := Convert(source, "", 160)
 	if err != nil {
 		t.Fatal(err)
@@ -23,6 +23,41 @@ func TestMarkdownFeaturesAndStableTOC(t *testing.T) {
 		if !strings.Contains(a.HTML, fragment) {
 			t.Errorf("missing %s in %s", fragment, a.HTML)
 		}
+	}
+}
+
+func TestTOCRequiresStandaloneMarker(t *testing.T) {
+	for _, test := range []struct {
+		name, prefix string
+		enabled      bool
+	}{
+		{"absent", "", false},
+		{"marker", "[TOC]\n\n", true},
+		{"case and whitespace", "  [toc]  \n\n", true},
+		{"repeated", "[TOC]\n\n[TOC]\n\n", true},
+		{"fenced code", "```markdown\n[TOC]\n```\n\n", false},
+		{"indented code", "    [TOC]\n\n", false},
+		{"inline code", "`[TOC]`\n\n", false},
+		{"escaped", "\\[TOC]\n\n", false},
+		{"inline text", "Example [TOC] marker\n\n", false},
+		{"quote", "> [TOC]\n\n", false},
+		{"html", "<div>\n[TOC]\n</div>\n\n", false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			r, err := Convert(test.prefix+"# Heading\n\n## Child\n\n正文。", "", 160)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if (len(r.TOC) > 0) != test.enabled {
+				t.Fatalf("TOC enabled = %v: %+v", test.enabled, r.TOC)
+			}
+			if !strings.Contains(r.HTML, `id="heading"`) || !strings.Contains(r.HTML, `id="child"`) {
+				t.Fatal("heading anchors must remain available")
+			}
+			if test.enabled && (len(r.TOC) != 2 || r.TOC[0].Level != 1 || r.TOC[1].Level != 2 || strings.Contains(strings.ToLower(r.HTML), "[toc]") || r.Summary != "正文。") {
+				t.Fatalf("marker leaked or heading hierarchy changed: %+v", r)
+			}
+		})
 	}
 }
 

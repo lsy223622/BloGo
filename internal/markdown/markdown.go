@@ -37,12 +37,24 @@ func Convert(body, explicitSummary string, maxChars int) (Result, error) {
 	md := goldmark.New(goldmark.WithExtensions(extension.GFM, extension.Footnote), goldmark.WithParserOptions(parser.WithAutoHeadingID(), parser.WithInlineParsers(util.Prioritized(&mathInlineParser{}, 150)), parser.WithBlockParsers(util.Prioritized(&mathBlockParser{}, 50))), goldmark.WithRendererOptions(gmhtml.WithUnsafe(), renderer.WithNodeRenderers(util.Prioritized(&mathRenderer{}, 100), util.Prioritized(&codeRenderer{}, 100))))
 	source := []byte(body)
 	doc := md.Parser().Parse(text.NewReader(source))
+	tocEnabled := false
+	for n := doc.FirstChild(); n != nil; {
+		next := n.NextSibling()
+		if paragraph, ok := n.(*ast.Paragraph); ok && paragraph.Lines().Len() == 1 {
+			line := paragraph.Lines().At(0)
+			if strings.EqualFold(strings.TrimSpace(string(line.Value(source))), "[TOC]") {
+				tocEnabled = true
+				doc.RemoveChild(doc, n)
+			}
+		}
+		n = next
+	}
 	var result Result
 	_ = ast.Walk(doc, func(n ast.Node, enter bool) (ast.WalkStatus, error) {
 		if !enter {
 			return ast.WalkContinue, nil
 		}
-		if h, ok := n.(*ast.Heading); ok {
+		if h, ok := n.(*ast.Heading); ok && tocEnabled {
 			id, _ := h.AttributeString("id")
 			result.TOC = append(result.TOC, Heading{h.Level, string(id.([]byte)), plainInline(h, source, false)})
 		}

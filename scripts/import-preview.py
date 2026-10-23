@@ -29,6 +29,7 @@ def convert_toc(body):
         elif fence is None and len(line)-len(stripped)<4 and stripped.strip().lower()=='[toc]':
             while output and not output[-1].strip(): output.pop()
             if output and re.fullmatch(r'#{1,6}\s+目录\s*',output[-1].strip()): output.pop()
+            output.append(line)
             count += 1
         else:
             output.append(line)
@@ -99,7 +100,7 @@ def import_preview(source, older, attachments, output, project):
         status='public' if confirmed or name=='友链.md' else 'draft'
         converted,toc_count=convert_toc(body)
         changes=[]
-        if toc_count: changes.append(f'removed {toc_count} legacy TOC marker(s) and adjacent empty TOC heading; renderer supplies heading TOC')
+        if toc_count: changes.append(f'preserved {toc_count} TOC marker(s) and removed adjacent empty TOC heading')
         for old,new in [('https://blog.lsy223622.com/category/tech/','/categories/tech/'),('https://blog.lsy223622.com/category/life/','/categories/life/')]:
             if old in converted:
                 converted=converted.replace(old,new);changes.append(f'trial category link {old} -> {new}')

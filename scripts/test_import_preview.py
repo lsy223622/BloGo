@@ -15,7 +15,7 @@ class ImportPreviewTests(unittest.TestCase):
     def test_toc_conversion_preserves_fenced_examples(self):
         body = '# 目录\n\n[TOC]\n\n# 正文\n\n```markdown\n[TOC]\n```\n'
         converted, count = self.module.convert_toc(body)
-        self.assertEqual(converted, '\n# 正文\n\n```markdown\n[TOC]\n```\n')
+        self.assertEqual(converted, '[TOC]\n\n# 正文\n\n```markdown\n[TOC]\n```\n')
         self.assertEqual(count, 1)
 
     def test_dates_do_not_mistake_release_tables_for_publication(self):
