@@ -58,6 +58,12 @@ def import_preview(source, older, attachments, output, project):
     source,output,project=source.resolve(),output.resolve(),project.resolve()
     if not output.is_relative_to(project/'output'): raise ValueError('trial output must be inside project/output')
     if output.is_relative_to(source) or source.is_relative_to(output): raise ValueError('source and output must be separate')
+    if not source.is_dir(): raise ValueError(f'source directory does not exist: {source}')
+    originals={p.name:p.read_bytes() for p in sorted(source.glob('*.md'))}
+    if not originals: raise ValueError(f'source contains no Markdown files: {source}')
+    for data in originals.values(): data.decode('utf-8-sig')
+    if older and not older.is_dir(): raise ValueError(f'older source directory does not exist: {older}')
+    if attachments and not attachments.is_dir(): raise ValueError(f'attachment directory does not exist: {attachments}')
     marker=output/'import-map.json'
     if output.exists() and any(output.iterdir()) and not marker.exists(): raise ValueError('refusing to overwrite an unrecognized output directory')
     if marker.exists():
@@ -72,7 +78,6 @@ def import_preview(source, older, attachments, output, project):
     (output/'content/pages').mkdir(parents=True,exist_ok=True)
     shutil.copytree(project/'static',output/'static',dirs_exist_ok=True)
     entries=[]
-    originals={p.name:p.read_bytes() for p in sorted(source.glob('*.md'))}
     friends=originals.get('友链.md',b'').decode('utf-8-sig')
     title=re.search(r'^-\s*名称[：:]\s*(.+)$',friends,re.M)
     description=re.search(r'^-\s*描述[：:]\s*(.+)$',friends,re.M)

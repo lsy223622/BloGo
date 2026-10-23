@@ -15,7 +15,7 @@ go run ./cmd/blog dev --config output/personal-preview/config.yaml --output site
 
 旧 `[TOC]` 标记与相邻空目录标题在代码围栏之外转换，由渲染器生成真实目录。两条已知旧分类链接映射到本地分类；其他正文、原生 HTML 和外链图片保留。附件只盘点，不下载远程图片；有未解析本地资源时构建会按正常资源检查失败，需核对原路径后再处理。
 
-重复导入只更新映射记录中的生成文章，不覆盖不认识的目录。修改项目主题资源后重新执行导入，将 static 副本刷新；模板直接引用项目模板，dev 会检测变化。生成配置只提供回环预览所需路径。
+导入前检查源目录、Markdown 清单和 UTF-8，错误输入保留上次试用数据。重复导入只更新映射记录中的生成文章，不覆盖不认识的目录。修改项目主题资源后重新执行导入，将 static 副本刷新；模板直接引用项目模板，dev 会检测变化。生成配置只提供回环预览所需路径。
 
 ```powershell
 python -m unittest discover -s scripts -p test_import_preview.py

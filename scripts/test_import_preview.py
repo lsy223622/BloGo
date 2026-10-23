@@ -45,5 +45,20 @@ class ImportPreviewTests(unittest.TestCase):
             again=self.module.import_preview(source,older,None,project/'output'/'trial',project)
             self.assertEqual([e.get('id') for e in result['entries']],[e.get('id') for e in again['entries']])
 
+    def test_bad_source_preserves_existing_preview(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp);source=root/'source';source.mkdir();project=root/'project';(project/'static').mkdir(parents=True)
+            (source/'article.md').write_text('Body',encoding='utf-8')
+            output=project/'output/trial'
+            self.module.import_preview(source,None,None,output,project)
+            before={p.relative_to(output):p.read_bytes() for p in output.rglob('*') if p.is_file()}
+            empty=root/'empty';empty.mkdir()
+            corrupt=root/'corrupt';corrupt.mkdir();(corrupt/'bad.md').write_bytes(b'\xff')
+            for bad,expected in [(root/'missing',ValueError),(empty,ValueError),(corrupt,UnicodeError)]:
+                with self.subTest(source=bad):
+                    with self.assertRaises(expected):
+                        self.module.import_preview(bad,None,None,output,project)
+                    self.assertEqual({p.relative_to(output):p.read_bytes() for p in output.rglob('*') if p.is_file()},before)
+
 
 if __name__=='__main__': unittest.main()

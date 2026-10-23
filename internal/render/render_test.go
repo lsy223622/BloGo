@@ -106,6 +106,20 @@ func TestLogoAndSectionNavigation(t *testing.T) {
 			t.Fatalf("current section missing: %s", p.ID)
 		}
 	}
+	for _, p := range pages {
+		if p.ID == "page:about" || p.ID == "page:links" {
+			p.Visibility = content.Unlisted
+		}
+	}
+	home := &site.Page{ID: "home", URL: "/", Kind: "system", Title: "Home"}
+	data, err := r.Render(home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	nav := strings.SplitN(strings.SplitN(string(data), `<nav class="left-nav"`, 2)[1], `</nav>`, 2)[0]
+	if strings.Contains(nav, `href="/about/"`) || strings.Contains(nav, `href="/links/"`) {
+		t.Fatal("unlisted pages exposed in shared navigation")
+	}
 }
 
 func TestStandaloneTokenizerAndOriginalText(t *testing.T) {

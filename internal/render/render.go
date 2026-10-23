@@ -134,10 +134,10 @@ func (r *Renderer) Render(p *site.Page) ([]byte, error) {
 		v.TOC = body.TOC
 	}
 	for _, page := range r.pages {
-		if page.ID == "page:about" {
+		if page.ID == "page:about" && page.Visibility == content.Public {
 			v.AboutURL = page.URL
 		}
-		if page.ID == "page:links" {
+		if page.ID == "page:links" && page.Visibility == content.Public {
 			v.LinksURL = page.URL
 		}
 		if page.ID == "categories" {
