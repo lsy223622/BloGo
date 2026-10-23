@@ -18,9 +18,15 @@
 
 Mermaid 的浏览器包和 MIT 许可位于 `static/vendor/mermaid-12.2.0/`，只在包含 Mermaid 围栏的页面加载；使用官方 npm 包中的独立构建，无 CDN 运行时依赖。
 
+站内导航使用自托管 Swup 4.10.0 与 Scroll Plugin 4.0.0，只替换 `#main`；导航、站点标题区、信息栏与主题控件保留原 DOM。正文淡入淡出为 140ms，减少动态效果时直接替换。地址、标题、canonical、Open Graph、description、robots 与当前栏目同步更新，滚动插件保存桌面阅读区和手机内容区的历史位置。完整 HTML 仍是每个 URL 的直接访问与刷新入口。
+
+`theme.js` 的页面增强通过 `BloGoPage.init/destroy` 管理代码块、公式、图表、灯箱与阅读量；相同正文节点只初始化一次，离开时收起提示和灯箱。Mermaid 加载失败时保留源码，其他增强独立工作。`navigation.js` 在替换前取消尚未可见页面的统计，替换后按新页面的统计开关发送一次浏览事件；只提取上一页 URL 的主机名。每次访问带独立标记，延迟到达的旧统计脚本不计入新访问。热门列表保留在信息栏中，不重复添加。
+
+作者正文包含脚本的页面、Standalone、附件、外部链接和显式 `data-no-swup` 链接沿用正常导航；请求或页面增强失败、替换容器缺失、运行时资源版本变化时回到正常页面加载。Swup 未加载或 JavaScript 关闭时仍可浏览。Swup 及滚动插件的版本目录保留各自 MIT 许可；实现依据 [Swup 生命周期](https://swup.js.org/hooks/) 和 [滚动容器说明](https://swup.js.org/plugins/scroll-plugin/)。
+
 2026-10-23 本地 Edge/Playwright 核对首页、文章、分类、标签、归档和友链，共 1440/390 像素 × 浅色/深色的 24 组页面：无横向溢出，友链头像为 48×48，长名称换行。公式及代码高亮加载成功，灯箱可以打开并按 Escape 关闭。关闭 JavaScript 后正文、导航和公式源码仍可读。浅色辅助文字对比度为 4.67:1，强调色为 5.08:1；暗色代码残留浅色 token 的问题先复现后修正。截图保存在本地 `output/playwright/`。
 
-构建时复制普通静态文件，并为构建器管理的 `theme.css`、`theme.js`、`stats.js`（存在时）及生成的 `highlight.css` 压缩和生成内容哈希文件名。原始静态路径仍可供作者显式引用。KaTeX 使用带版本目录，CSS 所引用的字体目录结构保持不变。CSS 本地资源通过 tokenizer 检查存在性；页面引用在完整构建阶段校验。
+构建时复制普通静态文件，并为构建器管理的 `theme.css`、`theme.js`、`navigation.js`、`stats.js`（存在时）及生成的 `highlight.css` 压缩和生成内容哈希文件名。原始静态路径仍可供作者显式引用。KaTeX 使用带版本目录，CSS 所引用的字体目录结构保持不变。CSS 本地资源通过 tokenizer 检查存在性；页面引用在完整构建阶段校验。
 
 作者 HTML 片段、Standalone、内联脚本与样式不参与压缩或路径字符串替换。静态输入仅接受常用图片、CSS/JS、字体、媒体、PDF、JSON/XML/TXT 及 LICENSE 文件；符号链接、特殊文件和静态 HTML 不进入附件输出，HTML 页面由内容模型统一建立身份。
 

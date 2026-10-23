@@ -13,15 +13,18 @@
 <meta property="og:description" content="{{.Summary}}">
 {{if .Page.NoIndex}}<meta name="robots" content="noindex">{{end}}
 <link rel="alternate" type="application/rss+xml" title="{{.Site.Title}}" href="/rss.xml">
-{{with index .Assets "theme.css"}}<link rel="stylesheet" href="{{.}}">{{end}}
-{{with index .Assets "highlight.css"}}<link rel="stylesheet" href="{{.}}">{{end}}
-{{with index .Assets "katex.css"}}<link rel="stylesheet" href="{{.}}">{{end}}
+{{with index .Assets "theme.css"}}<link rel="stylesheet" href="{{.}}" data-blogo-runtime>{{end}}
+{{with index .Assets "highlight.css"}}<link rel="stylesheet" href="{{.}}" data-blogo-runtime>{{end}}
+{{with index .Assets "katex.css"}}<link rel="stylesheet" href="{{.}}" data-blogo-runtime>{{end}}
 {{if .Mermaid}}{{with index .Assets "mermaid.js"}}<script src="{{.}}" defer></script>{{end}}{{end}}
-{{with index .Assets "theme.js"}}<script src="{{.}}" defer></script>{{end}}
-{{with index .Assets "katex.js"}}<script src="{{.}}" defer></script>{{end}}
+{{with index .Assets "theme.js"}}<script src="{{.}}" defer data-blogo-runtime></script>{{end}}
+{{with index .Assets "katex.js"}}<script src="{{.}}" defer data-blogo-runtime></script>{{end}}
+{{with index .Assets "swup.js"}}<script src="{{.}}" defer data-blogo-runtime></script>{{end}}
+{{with index .Assets "swup-scroll.js"}}<script src="{{.}}" defer data-blogo-runtime></script>{{end}}
+{{with index .Assets "navigation.js"}}<script src="{{.}}" defer data-blogo-runtime></script>{{end}}
 </head>
-<body data-page-id="{{.Page.ID}}" data-site-timezone="{{.Site.Timezone}}">
-<a class="skip-link" href="#main">跳至正文</a>
+<body data-page-id="{{.Page.ID}}" data-site-timezone="{{.Site.Timezone}}" data-blogo-view="initial">
+<a class="skip-link" href="#main" data-no-swup>跳至正文</a>
 <div class="site-grid">
 <nav class="left-nav" aria-label="主导航">
 <a class="brand" href="/" aria-label="{{.Site.Title}} 首页"><span class="brand-mark" aria-hidden="true"></span></a>
@@ -37,8 +40,8 @@
 <button type="button" class="theme-toggle icon-button" aria-label="系统" data-tooltip="系统" hidden></button>
 </nav>
 <header class="site-header"><a href="/">{{.Site.Title}}</a><span>{{.Site.Subtitle}}</span></header>
-<div class="content-area">
-<main id="main" class="reading-column" tabindex="0">
+<div class="content-area" data-swup-scroll-container>
+<main id="main" class="reading-column" tabindex="0" data-swup-scroll-container data-page-id="{{.Page.ID}}" data-site-timezone="{{.Site.Timezone}}" data-stats-src="{{if .Page.StatsEnabled}}{{index .Assets "stats.js"}}{{end}}" data-mermaid-src="{{if .Mermaid}}{{index .Assets "mermaid.js"}}{{end}}">
 {{if .Page.Content}}
 <article>
 <header class="article-header"><p class="eyebrow">{{if eq .Page.Kind "post"}}文章{{else}}独立页面{{end}}</p><h1>{{.Page.Title}}</h1>
@@ -66,7 +69,7 @@
 </aside>
 </div>
 </div>
-{{if .Page.StatsEnabled}}{{with index .Assets "stats.js"}}<script src="{{.}}" data-page-id="{{$.Page.ID}}" data-site-timezone="{{$.Site.Timezone}}" defer></script>{{end}}{{end}}
+{{if .Page.StatsEnabled}}{{with index .Assets "stats.js"}}<script src="{{.}}" data-page-id="{{$.Page.ID}}" data-site-timezone="{{$.Site.Timezone}}" data-blogo-view="initial" defer></script>{{end}}{{end}}
 </body>
 </html>
 {{end}}

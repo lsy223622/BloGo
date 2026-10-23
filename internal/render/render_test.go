@@ -147,6 +147,37 @@ func TestMermaidScriptOnlyLoadsOnDiagramPages(t *testing.T) {
 	}
 }
 
+func TestPartialNavigationKeepsPageIdentityInsideMain(t *testing.T) {
+	c, err := config.Load("../../config.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := &site.Page{ID: "post:visit", URL: "/posts/visit/", Title: "Visit", StatsEnabled: true}
+	r, err := New(c, []*site.Page{p}, &content.Taxonomies{}, map[string]string{"stats.js": "/assets/stats.js", "navigation.js": "/assets/navigation.js", "swup.js": "/vendor/swup.js", "swup-scroll.js": "/vendor/scroll.js"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := r.Render(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(out)
+	main := strings.SplitN(strings.SplitN(s, `<main `, 2)[1], `</main>`, 2)[0]
+	for _, want := range []string{`data-page-id="post:visit"`, `data-stats-src="/assets/stats.js"`, `data-swup-scroll-container`} {
+		if !strings.Contains(main, want) {
+			t.Fatalf("missing page context %s", want)
+		}
+	}
+	for _, want := range []string{`src="/vendor/swup.js"`, `src="/vendor/scroll.js"`, `src="/assets/navigation.js"`} {
+		if !strings.Contains(s, want) {
+			t.Fatalf("missing navigation runtime %s", want)
+		}
+	}
+	if strings.Contains(main, `class="left-nav"`) || strings.Contains(main, `class="right-sidebar"`) || strings.Contains(main, `class="site-header"`) {
+		t.Fatal("shared layout included in replacement container")
+	}
+}
+
 func TestStandaloneTokenizerAndOriginalText(t *testing.T) {
 	body := `<!doctype html><html><head><meta name="robots" content="noindex, follow"></head><body><!-- </body> --><script>const fake = "</body>";</script><p>Original  spacing</p></body></html>`
 	script := `<script src="/assets/stats.js" defer></script>`

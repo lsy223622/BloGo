@@ -86,7 +86,7 @@ func CopyAssets(source, public string, pages []*site.Page) (map[string]string, e
 	assets := map[string]string{}
 	generated := map[string][]byte{}
 	managed := map[string][]byte{"highlight.css": []byte(markdown.HighlightCSS())}
-	for _, name := range []string{"theme.css", "theme.js", "stats.js"} {
+	for _, name := range []string{"theme.css", "theme.js", "navigation.js", "stats.js"} {
 		if data, ok := files["assets/"+name]; ok {
 			managed[name] = data
 		}
@@ -110,7 +110,7 @@ func CopyAssets(source, public string, pages []*site.Page) (map[string]string, e
 		generated[file] = compact
 		assets[name] = "/" + file
 	}
-	for _, entry := range []struct{ key, file string }{{"katex.css", "vendor/katex-0.19.0/katex.min.css"}, {"katex.js", "vendor/katex-0.19.0/katex.min.js"}, {"mermaid.js", "vendor/mermaid-12.2.0/mermaid.min.js"}} {
+	for _, entry := range []struct{ key, file string }{{"katex.css", "vendor/katex-0.19.0/katex.min.css"}, {"katex.js", "vendor/katex-0.19.0/katex.min.js"}, {"mermaid.js", "vendor/mermaid-12.2.0/mermaid.min.js"}, {"swup.js", "vendor/swup-4.10.0/swup.js"}, {"swup-scroll.js", "vendor/swup-scroll-4.0.0/swup-scroll.js"}} {
 		if _, ok := files[entry.file]; ok {
 			assets[entry.key] = "/" + entry.file
 		}

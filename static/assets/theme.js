@@ -37,13 +37,7 @@
   document.addEventListener('contextmenu', event => {
     if (root.dataset.input === 'touch' && event.target.closest('.icon-button')) event.preventDefault();
   });
-  const diagrams = [...document.querySelectorAll('pre.mermaid')].map(source => {
-    const output = document.createElement('div');
-    output.className = 'mermaid-diagram';
-    output.hidden = true;
-    source.after(output);
-    return {source, output, text:source.textContent};
-  });
+  let diagrams = [], activeMain, mermaidLoading;
   let drawing = Promise.resolve(), diagramID = 0;
   const renderDiagrams = () => {
     drawing = drawing.then(async () => {
@@ -52,6 +46,7 @@
       for (const diagram of diagrams) {
         try {
           const result = await window.mermaid.render(`blogo-diagram-${++diagramID}`, diagram.text);
+          if (!diagram.source.isConnected) continue;
           diagram.output.innerHTML = result.svg;
           diagram.output.hidden = false;
           diagram.source.hidden = true;
@@ -61,6 +56,7 @@
         }
       }
     });
+    return drawing;
   };
   let preference;
   try { preference = localStorage.getItem("blogo-theme"); } catch (_) {}
@@ -89,85 +85,120 @@
     });
     media.addEventListener("change", () => { if (preference === 'system') applyTheme(); });
   }
-  document.querySelectorAll('.prose pre:not(.mermaid)').forEach(pre => {
-    const source = pre.textContent;
-    const frame = document.createElement('div'); frame.className = 'code-block';
-    pre.before(frame); frame.append(pre);
-    const tools = document.createElement('div'); tools.className = 'code-tools';
-    const button = (name,label) => {
-      const node = document.createElement('button');
-      node.type = 'button'; node.className = 'icon-button';
-      node.setAttribute('aria-label',label); node.dataset.tooltip = label; node.innerHTML = icon(name);
-      tools.append(node); return node;
-    };
-    const wrap = button('wrapOff','开启自动换行');
-    wrap.setAttribute('aria-pressed','false');
-    wrap.addEventListener('click', () => {
-      const enabled = frame.classList.toggle('is-wrapped');
-      wrap.setAttribute('aria-pressed',String(enabled));
-      wrap.innerHTML = icon(enabled ? 'wrapOn' : 'wrapOff');
-      wrap.dataset.tooltip = enabled ? '关闭自动换行' : '开启自动换行';
-      wrap.setAttribute('aria-label',wrap.dataset.tooltip);
-      showTooltip(wrap);
+  const destroyPage = () => {
+    hideTooltip();
+    document.querySelectorAll('.lightbox').forEach(dialog => dialog.remove());
+    diagrams = [];
+    activeMain = null;
+  };
+  const initPage = async () => {
+    const main = document.querySelector('#main');
+    if (!main || main === activeMain) return;
+    activeMain = main;
+    diagrams = [...main.querySelectorAll('pre.mermaid')].map(source => {
+      const output = document.createElement('div');
+      output.className = 'mermaid-diagram';
+      output.hidden = true;
+      source.after(output);
+      return {source, output, text:source.textContent};
     });
-    const copy = button('copy','复制代码');
-    let feedbackTimer;
-    copy.addEventListener('click', async () => {
-      clearTimeout(feedbackTimer);
-      showTooltip(copy);
-      try {
-        await navigator.clipboard.writeText(source);
-        copy.dataset.tooltip = '已复制';
-      } catch (_) { copy.dataset.tooltip = '复制失败'; }
-      copy.setAttribute('aria-label',copy.dataset.tooltip);
-      if (tooltipOwner === copy) showTooltip(copy);
-      feedbackTimer = setTimeout(() => { copy.dataset.tooltip = '复制代码'; copy.setAttribute('aria-label','复制代码'); },1600);
+    main.querySelectorAll('.prose pre:not(.mermaid)').forEach(pre => {
+      const source = pre.textContent;
+      const frame = document.createElement('div'); frame.className = 'code-block';
+      pre.before(frame); frame.append(pre);
+      const tools = document.createElement('div'); tools.className = 'code-tools';
+      const button = (name,label) => {
+        const node = document.createElement('button');
+        node.type = 'button'; node.className = 'icon-button';
+        node.setAttribute('aria-label',label); node.dataset.tooltip = label; node.innerHTML = icon(name);
+        tools.append(node); return node;
+      };
+      const wrap = button('wrapOff','开启自动换行');
+      wrap.setAttribute('aria-pressed','false');
+      wrap.addEventListener('click', () => {
+        const enabled = frame.classList.toggle('is-wrapped');
+        wrap.setAttribute('aria-pressed',String(enabled));
+        wrap.innerHTML = icon(enabled ? 'wrapOn' : 'wrapOff');
+        wrap.dataset.tooltip = enabled ? '关闭自动换行' : '开启自动换行';
+        wrap.setAttribute('aria-label',wrap.dataset.tooltip);
+        showTooltip(wrap);
+      });
+      const copy = button('copy','复制代码');
+      let feedbackTimer;
+      copy.addEventListener('click', async () => {
+        clearTimeout(feedbackTimer);
+        showTooltip(copy);
+        try {
+          await navigator.clipboard.writeText(source);
+          copy.dataset.tooltip = '已复制';
+        } catch (_) { copy.dataset.tooltip = '复制失败'; }
+        copy.setAttribute('aria-label',copy.dataset.tooltip);
+        if (tooltipOwner === copy) showTooltip(copy);
+        feedbackTimer = setTimeout(() => { copy.dataset.tooltip = '复制代码'; copy.setAttribute('aria-label','复制代码'); },1600);
+      });
+      frame.append(tools);
     });
-    frame.append(tools);
-  });
-  document.addEventListener("DOMContentLoaded", () => {
     if (window.katex) {
-      document.querySelectorAll(".math-inline,.math-block").forEach((node) => {
+      main.querySelectorAll(".math-inline,.math-block").forEach((node) => {
         const block = node.classList.contains("math-block");
         const delimiter = block ? 2 : 1;
         const source = node.textContent.trim().slice(delimiter, -delimiter).trim();
         try { window.katex.render(source, node, {displayMode: block, throwOnError: false, trust: false}); } catch (_) {}
       });
     }
-  });
-  document.querySelectorAll(".prose img").forEach((image) => {
-    if (image.closest("a")) return;
-    image.tabIndex = 0;
-    image.setAttribute("role", "button");
-    image.setAttribute("aria-label", "放大图片：" + image.alt);
-    const open = () => {
-      const dialog = document.createElement("dialog");
-      dialog.className = "lightbox";
-      const close = document.createElement("button");
-      close.type = "button"; close.textContent = "×"; close.setAttribute("aria-label", "关闭图片");
-      const enlarged = document.createElement("img"); enlarged.src = image.currentSrc || image.src; enlarged.alt = image.alt;
-      dialog.append(close, enlarged); document.body.append(dialog);
-      close.addEventListener("click", () => dialog.close());
-      dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close(); });
-      dialog.addEventListener("close", () => { dialog.remove(); image.focus(); }, {once: true});
-      dialog.showModal();
-    };
-    image.addEventListener("click", open);
-    image.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); open(); } });
-  });
-  fetch("/data/stats.json", {cache: "no-cache"}).then((response) => { if (!response.ok) throw new Error("stats"); return response.json(); }).then((data) => {
-    document.querySelectorAll("[data-views-for]").forEach((node) => {
-      const count = data.pages?.[node.dataset.viewsFor]?.views;
-      if (Number.isSafeInteger(count) && count >= 0) { node.textContent = count.toLocaleString() + " 次阅读"; node.hidden = false; }
+    main.querySelectorAll(".prose img").forEach((image) => {
+      if (image.closest("a")) return;
+      image.tabIndex = 0;
+      image.setAttribute("role", "button");
+      image.setAttribute("aria-label", "放大图片：" + image.alt);
+      const open = () => {
+        const dialog = document.createElement("dialog");
+        dialog.className = "lightbox";
+        const close = document.createElement("button");
+        close.type = "button"; close.textContent = "×"; close.setAttribute("aria-label", "关闭图片");
+        const enlarged = document.createElement("img"); enlarged.src = image.currentSrc || image.src; enlarged.alt = image.alt;
+        dialog.append(close, enlarged); document.body.append(dialog);
+        close.addEventListener("click", () => dialog.close());
+        dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close(); });
+        dialog.addEventListener("close", () => { dialog.remove(); image.focus(); }, {once: true});
+        dialog.showModal();
+      };
+      image.addEventListener("click", open);
+      image.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); open(); } });
     });
-    const list = document.querySelector("[data-popular-posts]");
-    if (list && Array.isArray(data.popular_30d)) {
-      data.popular_30d.slice(0, 5).forEach((post) => {
-        if (typeof post.url !== "string" || !/^\/(?:[a-z0-9-]+\/)+$/.test(post.url) || typeof post.title !== "string") return;
-        const item = document.createElement("li"); const link = document.createElement("a");
-        link.href = post.url; link.textContent = post.title; item.append(link); list.append(item);
+    fetch("/data/stats.json", {cache: "no-cache"}).then((response) => { if (!response.ok) throw new Error("stats"); return response.json(); }).then((data) => {
+      if (main !== activeMain) return;
+      main.querySelectorAll("[data-views-for]").forEach((node) => {
+        const count = data.pages?.[node.dataset.viewsFor]?.views;
+        if (Number.isSafeInteger(count) && count >= 0) { node.textContent = count.toLocaleString() + " 次阅读"; node.hidden = false; }
       });
-      if (list.childElementCount) list.closest("section").hidden = false;
+      const list = document.querySelector("[data-popular-posts]");
+      if (list && !list.dataset.loaded && Array.isArray(data.popular_30d)) {
+        list.dataset.loaded = 'true';
+        data.popular_30d.slice(0, 5).forEach((post) => {
+          if (typeof post.url !== "string" || !/^\/(?:[a-z0-9-]+\/)+$/.test(post.url) || typeof post.title !== "string") return;
+          const item = document.createElement("li"); const link = document.createElement("a");
+          link.href = post.url; link.textContent = post.title; item.append(link); list.append(item);
+        });
+        if (list.childElementCount) list.closest("section").hidden = false;
+      }
+    }).catch(() => {});
+    if (diagrams.length && !window.mermaid && main.dataset.mermaidSrc) {
+      if (!mermaidLoading) mermaidLoading = new Promise((resolve,reject) => {
+        const script = document.createElement('script');
+        script.src = main.dataset.mermaidSrc;
+        script.onload = resolve;
+        script.onerror = () => { script.remove(); mermaidLoading = null; reject(new Error('Mermaid failed to load')); };
+        document.head.append(script);
+      });
+      await mermaidLoading.catch(() => {});
     }
-  }).catch(() => {});
+    if (main !== activeMain) return;
+    await renderDiagrams();
+    if (main !== activeMain) return;
+  };
+  window.BloGoPage = {init:initPage, destroy:destroyPage};
+  const initialPage = () => { initPage().catch(() => {}); };
+  if (document.readyState === 'complete') initialPage();
+  else document.addEventListener('DOMContentLoaded',initialPage,{once:true});
 })();

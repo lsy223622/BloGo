@@ -9,7 +9,8 @@ function browser(options = {}) {
   const storage = options.storage || new Map();
   let random = 0;
   const document = {
-    currentScript: {dataset: {pageId: 'post:stable', siteTimezone: 'Asia/Shanghai'}},
+    currentScript: {dataset: {pageId: 'post:stable', siteTimezone: 'Asia/Shanghai',blogoView:'initial',...options.script}},
+    body: {dataset: {blogoView:options.view ?? 'initial'}},
     visibilityState: options.hidden ? 'hidden' : 'visible',
     referrer: options.referrer || '',
     addEventListener: (name, fn) => listeners.set(name, fn),
@@ -27,7 +28,7 @@ function browser(options = {}) {
     setTimeout: fn => timers.push(fn)
   };
   vm.runInNewContext(code(), context);
-  return {calls, timers, storage, visible() {document.visibilityState = 'visible'; listeners.get('visibilitychange')?.();}};
+  return {calls, timers, storage, leave(){listeners.get('blogo:page-leave')?.();},visible() {document.visibilityState = 'visible'; listeners.get('visibilitychange')?.();}};
 }
 async function event(b, index = 0) {return JSON.parse(await b.calls[index].body.text());}
 
@@ -65,4 +66,22 @@ test('visitor rotates on site midnight and denied storage still works', async ()
   const c = browser({storage: new Map([['blogo:visitor:v1', JSON.stringify({day:'2026-10-22', id:'a'.repeat(32)})]])});
   assert.notEqual((await event(c)).visitor_id, 'a'.repeat(32));
   assert.equal((await event(browser({noStorage:true, referrer:'invalid'}))).referrer_host, '');
+});
+
+test('a hidden page left before becoming visible is not counted later',()=>{
+  const b=browser({hidden:true});
+  b.leave();b.visible();
+  assert.equal(b.calls.length,0);
+});
+
+test('partial navigation uses its previous page as referrer instead of the initial external source',async()=>{
+  const b=browser({referrer:'https://search.example/private',script:{pageId:'post:next',referrer:'https://blog.example/posts/previous/?private#fragment'}});
+  const e=await event(b);
+  assert.equal(e.page_id,'post:next');
+  assert.equal(e.referrer_host,'blog.example');
+});
+
+test('a delayed collector for an older visit cannot count the current visit',()=>{
+  assert.equal(browser({view:'3',script:{blogoView:'1'}}).calls.length,0);
+  assert.equal(browser({view:'3',script:{blogoView:'3'}}).calls.length,1);
 });
