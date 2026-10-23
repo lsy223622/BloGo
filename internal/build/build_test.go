@@ -95,6 +95,47 @@ func TestFailedBuildPreservesPreviousOutput(t *testing.T) {
 	}
 }
 
+func TestCategoryConfigurationRemovesAndRestoresAllArticleOutput(t *testing.T) {
+	for _, preview := range []bool{false, true} {
+		c := buildFixture(t)
+		put(t, c.Paths.Source, "posts/a.md", "---\ntitle: Selected article\nstatus: public\npublished: 2026-10-23\ncategories: [missing, tech]\ntags: [known, unknown]\naliases: [/old-a/]\n---\nBody")
+		out := filepath.Join(t.TempDir(), "site")
+		for _, configured := range []bool{true, false, true} {
+			tax := "schema_version: 1\ntags:\n  known: {name: Known}\n"
+			if configured {
+				tax += "categories:\n  tech: {name: Tech}\n"
+			}
+			put(t, filepath.Dir(c.Paths.Taxonomies), filepath.Base(c.Paths.Taxonomies), tax)
+			result, err := Build(c, out, preview)
+			if err != nil {
+				t.Fatal(err)
+			}
+			found := false
+			for _, p := range result.Manifest.Pages {
+				found = found || p.ID == "post:a"
+			}
+			if found != configured || (result.Redirects["/old-a/"] != "") != configured {
+				t.Fatal("excluded article retained in manifest or redirects")
+			}
+			for _, file := range []string{"posts/a/index.html", "categories/tech/index.html", "tags/known/index.html"} {
+				_, err := os.Stat(filepath.Join(out, "public", filepath.FromSlash(file)))
+				if configured && err != nil || !configured && !os.IsNotExist(err) {
+					t.Fatalf("configured %v: %s: %v", configured, file, err)
+				}
+			}
+			for _, file := range []string{"index.html", "updates/index.html", "rss.xml", "sitemap.xml"} {
+				data, err := os.ReadFile(filepath.Join(out, "public", filepath.FromSlash(file)))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if strings.Contains(string(data), "/posts/a/") != configured {
+					t.Fatalf("configured %v: article reference in %s", configured, file)
+				}
+			}
+		}
+	}
+}
+
 func TestResourceErrorsAndStrictContentLinks(t *testing.T) {
 	c := buildFixture(t)
 	put(t, c.Paths.Source, "posts/a.md", "---\ntitle: A\nstatus: public\npublished: 2026-10-23\n---\n[Missing](/missing/)\n")

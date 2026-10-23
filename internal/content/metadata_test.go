@@ -67,7 +67,6 @@ func TestMetadataFailures(t *testing.T) {
 		{"pages/a.md", "published: ''\n", "published"},
 		{"pages/a.md", "published: 2026-10-23\nupdated: 2026-10-22\n", "updated"},
 		{"posts/a.md", "layout: page\n", "layout"}, {"pages/a.md", "layout: standalone\n", "layout"}, {"pages/a.html", "layout: article\n", "layout"},
-		{"pages/a.md", "categories: [unknown]\n", "categories"}, {"pages/a.md", "tags: [ESP32]\n", "tags"},
 		{"pages/a.md", "stats: 1\n", "stats"}, {"pages/a.md", "extra: false\n", "extra"},
 	} {
 		t.Run(tc.meta, func(t *testing.T) {
@@ -79,6 +78,22 @@ func TestMetadataFailures(t *testing.T) {
 				t.Fatalf("want %s location, got %v", tc.field, err)
 			}
 		})
+	}
+}
+
+func TestMetadataKeepsOnlyConfiguredTaxonomies(t *testing.T) {
+	item, err := Parse("posts/a.md", []byte("---\ncategories: [unknown, tech, tech]\ntags: [unknown, esp32, ESP32, esp32]\n---\nBody"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = item.Validate(time.UTC, testTaxonomies(t)); err != nil {
+		t.Fatal(err)
+	}
+	if len(item.Meta.Tags) != 1 || item.Meta.Tags[0] != "esp32" {
+		t.Fatalf("configured tags: %v", item.Meta.Tags)
+	}
+	if len(item.Meta.Categories) != 1 || item.Meta.Categories[0] != "tech" {
+		t.Fatalf("configured categories: %v", item.Meta.Categories)
 	}
 }
 

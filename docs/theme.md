@@ -6,6 +6,17 @@
 
 站点名称、副标题和每页条数分别在 `config.yaml` 的 `site.title`、`site.subtitle`、`build.page_size` 配置。内容 `extra.cover` 是封面资源 URL；`extra.links` 是友链列表，每项包含 `name`、`url`、`image`、`description`。这些值仍为普通模板数据，不执行表达式。
 
+友链按列表顺序显示，每项四个字段分别是名称、目标网址、头像和介绍。直接编辑对应页面的 Front Matter，例如：
+
+```yaml
+extra:
+  links:
+    - name: Go 项目与语言文档
+      url: https://go.dev/
+      image: /images/go.svg
+      description: Go 编程语言
+```
+
 导航 logo 使用原始 SVG 作为遮罩，保留 780×720 viewBox 和图形比例，透明背景上的填充跟随主题强调色；favicon 使用原始 SVG。导航显示当前栏目，“关于”和“友链”只列出对应的 Public 页面，移动端链接组可换行。RSS 和构建署名位于信息栏末尾，移动端随信息栏排在正文之后。
 
 表格单元格保留可读的最小列宽，窄屏在表格内部横向滚动；长 URL 可在单元格内换行，避免原生 HTML 表格被压成逐字排列。

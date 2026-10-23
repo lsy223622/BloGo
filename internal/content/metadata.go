@@ -91,11 +91,11 @@ func (item *ContentItem) Validate(location *time.Location, taxonomies *Taxonomie
 	var categories, tags []string
 	seen := map[string]bool{}
 	for _, id := range item.Meta.Categories {
+		if _, ok := taxonomies.Categories[id]; !ok {
+			continue
+		}
 		if !ValidID(id) {
 			return item.fieldError("categories", "invalid ASCII stable ID "+id)
-		}
-		if _, ok := taxonomies.Categories[id]; !ok {
-			return item.fieldError("categories", "unknown category "+id)
 		}
 		if !seen[id] {
 			categories = append(categories, id)
@@ -104,11 +104,11 @@ func (item *ContentItem) Validate(location *time.Location, taxonomies *Taxonomie
 	}
 	seen = map[string]bool{}
 	for _, id := range item.Meta.Tags {
+		if _, ok := taxonomies.Tags[id]; !ok {
+			continue
+		}
 		if !ValidID(id) {
 			return item.fieldError("tags", "invalid ASCII stable ID "+id)
-		}
-		if _, ok := taxonomies.Tags[id]; !ok {
-			return item.fieldError("tags", "unknown tag "+id)
 		}
 		if !seen[id] {
 			tags = append(tags, id)
