@@ -9,9 +9,9 @@ import (
 	"github.com/lsy223622/BloGo/internal/filelock"
 )
 
-func TestPublishRetainsOnlyDirectlyReferencedRecentHashes(t *testing.T) {
+func TestPublishAssetsBelongToCurrentSnapshot(t *testing.T) {
 	c := buildFixture(t)
-	c.Build.KeepReleases = 1
+	c.Build.KeepReleases = 2
 	put(t, c.Paths.Templates, "page.html", `{{define "page"}}<html><head><link rel="stylesheet" href="{{index .Assets "theme.css"}}"></head><body>{{.Body}}</body></html>{{end}}`)
 	first, err := Publish(c)
 	if err != nil {
@@ -25,26 +25,16 @@ func TestPublishRetainsOnlyDirectlyReferencedRecentHashes(t *testing.T) {
 	if len(asset) == 0 {
 		t.Fatal("missing old reference")
 	}
-	old, err := os.ReadFile(filepath.Join(first.Output, "public", string(asset)))
-	if err != nil {
-		t.Fatal(err)
-	}
 	put(t, c.Paths.Static, "assets/theme.css", "body{color:blue}")
 	second, err := Publish(c)
 	if err != nil {
 		t.Fatal(err)
 	}
-	retained, err := os.ReadFile(filepath.Join(second.Output, "public", string(asset)))
-	if err != nil || string(retained) != string(old) {
-		t.Fatalf("in-flight hash lost: %v", err)
+	if _, err = os.Stat(filepath.Join(second.Output, "public", string(asset))); !os.IsNotExist(err) {
+		t.Fatal("old asset inherited into current snapshot")
 	}
-	put(t, c.Paths.Static, "assets/theme.css", "body{color:green}")
-	third, err := Publish(c)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err = os.Stat(filepath.Join(third.Output, "public", string(asset))); !os.IsNotExist(err) {
-		t.Fatal("inherited unreferenced hash retained forever")
+	if _, err = os.Stat(filepath.Join(first.Output, "public", string(asset))); err != nil {
+		t.Fatal("complete rollback release lost", err)
 	}
 	if err = os.Remove(filepath.Join(c.Paths.Static, "assets/stats.js")); err != nil {
 		t.Fatal(err)
@@ -53,8 +43,31 @@ func TestPublishRetainsOnlyDirectlyReferencedRecentHashes(t *testing.T) {
 		t.Fatal("missing collector published")
 	}
 	current, err := filepath.EvalSymlinks(c.Paths.Current)
-	if err != nil || current != third.Output {
+	if err != nil || current != second.Output {
 		t.Fatal("missing collector switched current")
+	}
+}
+
+func TestDamagedHistoryDoesNotBlockHealthyPublication(t *testing.T) {
+	c := buildFixture(t)
+	old, err := Publish(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile(filepath.Join(old.Output, "meta/manifest.json"), []byte("broken history"), 0640); err != nil {
+		t.Fatal(err)
+	}
+	put(t, c.Paths.Static, "assets/theme.css", "body{color:blue}")
+	newRelease, err := Publish(c)
+	if err != nil {
+		t.Fatal("healthy publication blocked by history", err)
+	}
+	current, err := filepath.EvalSymlinks(c.Paths.Current)
+	if err != nil || current != newRelease.Output {
+		t.Fatal("new current not selected", err)
+	}
+	if _, err = VerifyRelease(c.Paths.Current); err != nil {
+		t.Fatal(err)
 	}
 }
 

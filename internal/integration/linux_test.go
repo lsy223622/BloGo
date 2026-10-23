@@ -13,7 +13,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -235,26 +234,6 @@ func TestDeployedLinux(t *testing.T) {
 	must(nginx.Start())
 	defer func() { nginx.Process.Signal(syscall.SIGTERM); nginx.Wait() }()
 	wait("http://127.0.0.1:8080/", 200)
-	response, err := client.Get("http://127.0.0.1:8080/")
-	must(err)
-	firstHTML, err := io.ReadAll(response.Body)
-	response.Body.Close()
-	must(err)
-	oldCSS := regexp.MustCompile(`/assets/theme\.[0-9a-f]{16}\.css`).FindString(string(firstHTML))
-	if oldCSS == "" {
-		t.Fatal("old CSS not found")
-	}
-	cssPath := filepath.Join(c.Paths.Static, "assets/theme.css")
-	css, err := os.ReadFile(cssPath)
-	must(err)
-	must(os.WriteFile(cssPath, append(css, []byte("\nbody{letter-spacing:.001px}")...), 0640))
-	publish()
-	response, err = client.Get("http://127.0.0.1:8080" + oldCSS)
-	must(err)
-	response.Body.Close()
-	if response.StatusCode != 200 {
-		t.Fatalf("in-flight old HTML asset: %d", response.StatusCode)
-	}
 	send := func(id, page string, code int) {
 		t.Helper()
 		payload := fmt.Sprintf(`{"v":1,"event_id":%q,"page_id":%q,"visitor_id":%q,"referrer_host":"Search.Example"}`, strings.Repeat(id, 32), page, strings.Repeat("f", 32))
@@ -273,7 +252,7 @@ func TestDeployedLinux(t *testing.T) {
 	report := func() { t.Helper(); run(reporter, dbgroup, []uint32{meta, web}, "report", "--config", configPath) }
 	report()
 	probe(101, 101, []uint32{web}, c.Stats.DatabasePath, c.Stats.PrivateOutput, c.Stats.VisitorKeyPath, c.Stats.ManifestPath, credentials)
-	response, err = client.Get("http://127.0.0.1:8080/data/stats.json")
+	response, err := client.Get("http://127.0.0.1:8080/data/stats.json")
 	must(err)
 	data, err := io.ReadAll(response.Body)
 	response.Body.Close()

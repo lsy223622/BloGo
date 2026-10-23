@@ -579,7 +579,6 @@ releases/<release-id>/
 
 Nginx 只从 current 提供页面与资源，HTML 使用需重新验证的缓存策略，带内容哈希的资源可长期缓存。回滚版本的文件由 release 目录保存。
 
-发布切换前，将 current 及其余最近完整版本中、最多 `keep_releases` 个已有版本的 HTML 直接引用的受管哈希 CSS/JS 复制到新 public/assets。只复制 theme/highlight/stats 的对应哈希文件并核对内容摘要，避免旧 HTML 的在途资源请求在切换后失败。不会递归继承先前已复制但未被其 HTML 引用的哈希，因此保留窗口随版本推进而回收；即使 keep_releases=1 也保留刚切换前一版的直接引用。更旧的客户端可能需要刷新。HTML 与 Manifest 仍整版切换，独立 build/dev 仍只输出本轮快照。
 
 ### 11.2 Manifest 契约
 

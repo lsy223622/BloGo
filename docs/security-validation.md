@@ -7,7 +7,6 @@
 | 源文件、模板、静态资源 | `TestReadSourcesRejectsSymlinks`、`TestScanRejectsLinksAndSpecialFiles` | 链接和 FIFO 明确拒绝，读取受 os.Root 约束 |
 | 路径关系 | `TestInvalidIdentities`、`TestInputOutputAndPrivatePathSeparation`、`TestLinkedOutputOverlap` | 拒绝穿越、非法路由及私有路径与输出重叠 |
 | 发布 | `TestPublishAtomicVersionAndRetention`、`TestFailedCurrentSwitchPreservesLink` | 失败保留旧 current，进程锁拒绝并发，HTML 与 Manifest 同版本 |
-| 发布间资源 | `TestPublishRetainsOnlyDirectlyReferencedRecentHashes`、隔离部署栈 | 先前 HTML 的受管哈希在窗口内仍可读取，不无限继承；缺失 collector 拒绝发布 |
 | 历史重定向 | `scripts/verify-nginx.ps1` | 生成的 map 区分路径大小写，转义点字符，规范 URL 不循环 |
 | 预览 | `TestPreviewCanonicalRoutesDraftsAndPrivateFiles` | 回环访问、规范 301、404、禁止 meta 与目录列表 |
 | 采集 API | `TestEventAPIRejectsMalformedAndUnwantedFields`、`TestManifestReloadAndControlledFailure` | 严格字段与大小限制，失效身份拒绝，数据库故障返回受控 503 |

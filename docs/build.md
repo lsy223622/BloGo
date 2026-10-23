@@ -22,7 +22,7 @@ Linux 上 `blog publish --config config.yaml` 先取得 current 目标的非阻�
 
 release 根目录与 public 可遍历读取，meta 为 0750、内部文件为 0640；部署时让构建器主组为 Manifest 读取组，统计/报告用户加入该组，Nginx 不加入。成功切换后按 `keep_releases` 保留完整版本，始终包含当前版本；清理错误作为警告保留供处理，不撤回已成功的切换。
 
-发布还保留 current 与最近完整版本（最多 keep_releases 个已有版本）HTML 直接引用的受管哈希 CSS/JS。这样客户端已拿到旧 HTML 时，切换后的 CSS/JS 请求仍能完成。继承但未被旧 HTML 直接引用的哈希不会继续传播，窗口外的客户端需要刷新。独立 build/dev 不携带发布历史资源。启用统计的任何页面都要求 assets/stats.js 存在，缺失时构建失败并保留旧版本。
+启用统计的任何页面都要求 assets/stats.js 存在，缺失时构建失败并保留旧版本。
 
 人工回滚先停止 watcher，核对保留版本的 public 与 meta，再用新的临时链接原子替换 current。确认源内容与选定版本一致后恢复 watcher，避免随后自动发布覆盖回滚结果。部署命令及权限设置见后续部署说明。
 

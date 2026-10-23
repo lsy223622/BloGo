@@ -51,9 +51,6 @@ func publishLocked(c *config.Config, fingerprint string) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err = retainPublishedAssets(c, candidate); err != nil {
-		return nil, err
-	}
 	manifest, err := VerifyRelease(candidate)
 	if err != nil {
 		return nil, err
