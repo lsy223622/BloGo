@@ -186,8 +186,11 @@ func TestSidebarProfileUsesTypedIconsAndEscapesMetadata(t *testing.T) {
 			t.Fatalf("missing preset icon for %s", kind)
 		}
 	}
-	if !strings.Contains(s, `href="mailto:hello@example.com"`) || !strings.Contains(s, `&lt;b&gt;Writer&lt;/b&gt;`) || strings.Contains(s, `<b>Writer</b>`) {
+	if !strings.Contains(s, `&lt;b&gt;Writer&lt;/b&gt;`) || strings.Contains(s, `<b>Writer</b>`) {
 		t.Fatal("profile links or metadata escaping")
+	}
+	if strings.Contains(s, "hello@example.com") || strings.Contains(s, "mailto:") || !strings.Contains(s, `data-email="`) {
+		t.Fatal("profile email must be obfuscated without a mail link")
 	}
 	c.Extra = nil
 	out, err = r.Render(p)

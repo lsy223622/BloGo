@@ -2,6 +2,7 @@ package render
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"html/template"
 	"io/fs"
@@ -58,6 +59,13 @@ func New(c *config.Config, pages []*site.Page, tax *content.Taxonomies, assets m
 		r.prepared[item.ID] = result
 	}
 	funcs := template.FuncMap{
+		"obfuscateEmail": func(address string) string {
+			encoded := []byte(address)
+			for i := range encoded {
+				encoded[i] ^= 0xa7
+			}
+			return base64.StdEncoding.EncodeToString(encoded)
+		},
 		"date": func(t *time.Time) string {
 			if t == nil {
 				return ""

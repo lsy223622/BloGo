@@ -19,12 +19,13 @@ extra:
 
 站点配置的 `extra.profile` 控制标签下面的“关于站长”信息，按列表顺序显示。每项包含 `type`、`label` 和可选的 `url`；支持的图标类型为 `qq`、`email`、`github`、`website`、`cc`。不填写 `url` 时显示普通文字。图标保存在本地 `static/images/profile.svg`，使用当前主题的文字颜色。
 
+`email` 项仅填写 `label` 中的邮箱地址。生成时混淆地址，浏览器通过本地 JavaScript 还原成可选中、复制的普通文字；未启用 JavaScript 时显示提示。混淆用于减少简单采集脚本直接提取地址，不能阻止模拟浏览器的采集。
+
 ```yaml
 extra:
   profile:
     - type: email
       label: hello@example.com
-      url: mailto:hello@example.com
     - type: cc
       label: CC BY-NC-SA 4.0
       url: https://creativecommons.org/licenses/by-nc-sa/4.0/
