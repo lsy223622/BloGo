@@ -6,6 +6,8 @@
 
 可选站点 `extra` 字段为 `tagline` 和 `description`。内容 `extra.cover` 是封面资源 URL；`extra.links` 是友链列表，每项包含 `name`、`url`、`image`、`description`。这些值仍为普通模板数据，不执行表达式。
 
+导航与侧栏使用原始浅青色 SVG，保留 780×720 viewBox 和图形比例，深色底衬用于保证浅色主题中的识别度；favicon 使用同一原件。导航显示当前栏目，“关于”和“友链”按对应页面是否存在显示，移动端链接组可换行。
+
 渲染回归复用仓库中的 Public、无日期独立页面和 Unlisted Standalone 样例。正文、标题转义、HTML 片段、noindex 和 tokenizer 插入位置在 `internal/render` 测试。
 
 主题资源位于 `static/assets/`，使用系统字体链、CSS 变量、回环本地预览与原生 `<dialog>` 灯箱。深浅色选择可保存到本地存储；存储不可用时仍可切换。代码使用 Chroma 的 GitHub / GitHub Dark 配色，公式由 `static/vendor/katex-0.19.0/` 的自托管 KaTeX 增强。KaTeX 的 MIT 许可保留在该目录的 LICENSE，JS 的 SHA-256 为 `103a53763cc033bba8d175bf3f0ba597c3505c9b6747dd3f2c7bc2a6bfcc8ae7`。

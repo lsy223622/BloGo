@@ -23,8 +23,16 @@
 <a class="skip-link" href="#main">跳至正文</a>
 <div class="site-grid">
 <nav class="left-nav" aria-label="主导航">
-<a class="brand" href="/" aria-label="{{.Site.Title}} 首页">B<span class="brand-dot">.</span></a>
-<a href="/">首页</a><a href="/categories/">分类</a><a href="/tags/">标签</a><a href="/archives/">归档</a><a href="/updates/">更新</a>
+<a class="brand" href="/" aria-label="{{.Site.Title}} 首页"><img src="/images/logo.svg" width="39" height="36" alt=""></a>
+<div class="nav-links">
+<a href="/" {{if navCurrent .Page "/"}}aria-current="location"{{end}}>首页</a>
+<a href="/categories/" {{if navCurrent .Page "/categories/"}}aria-current="location"{{end}}>分类</a>
+<a href="/tags/" {{if navCurrent .Page "/tags/"}}aria-current="location"{{end}}>标签</a>
+<a href="/archives/" {{if navCurrent .Page "/archives/"}}aria-current="location"{{end}}>归档</a>
+<a href="/updates/" {{if navCurrent .Page "/updates/"}}aria-current="location"{{end}}>更新</a>
+{{with .AboutURL}}<a href="{{.}}" {{if navCurrent $.Page .}}aria-current="location"{{end}}>关于</a>{{end}}
+{{with .LinksURL}}<a href="{{.}}" {{if navCurrent $.Page .}}aria-current="location"{{end}}>友链</a>{{end}}
+</div>
 <button type="button" class="theme-toggle" aria-label="切换深浅色主题" hidden>◐</button>
 </nav>
 <main id="main" class="reading-column">
@@ -49,7 +57,7 @@
 <footer class="site-footer"><a href="/rss.xml">RSS</a><span>由 BloGo 构建</span></footer>
 </main>
 <aside class="right-sidebar" aria-label="站点信息">
-<section class="profile"><div class="profile-mark">B.</div><h2>{{.Site.Title}}</h2><p>{{with index .Extra "description"}}{{.}}{{else}}把值得留下的事情，认真写下来。{{end}}</p></section>
+<section class="profile"><div class="profile-mark"><img src="/images/logo.svg" width="52" height="48" alt=""></div><h2>{{.Site.Title}}</h2><p>{{with index .Extra "description"}}{{.}}{{else}}把值得留下的事情，认真写下来。{{end}}</p></section>
 {{if .Recent}}<section><h2>最近更新</h2><ul>{{range .Recent}}<li><a href="{{.URL}}">{{.Meta.Title}}</a></li>{{end}}</ul></section>{{end}}
 {{if .Categories}}<section><h2>分类</h2><ul>{{range .Categories}}<li><a href="{{.URL}}">{{.Name}}</a><small>{{.Count}}</small></li>{{end}}</ul></section>{{end}}
 {{if .Tags}}<section><h2>标签</h2><div class="term-cloud">{{range .Tags}}<a href="{{.URL}}">{{.Name}}</a>{{end}}</div></section>{{end}}

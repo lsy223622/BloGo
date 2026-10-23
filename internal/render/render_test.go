@@ -57,6 +57,57 @@ func TestOrdinaryLayoutsEscapeMetadataAndPreserveTrustedBody(t *testing.T) {
 	}
 }
 
+func TestLogoAndSectionNavigation(t *testing.T) {
+	c, err := config.Load("../../config.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tax, err := content.ReadTaxonomies(c.Paths.Taxonomies)
+	if err != nil {
+		t.Fatal(err)
+	}
+	loc, _ := time.LoadLocation(c.Site.Timezone)
+	items, err := site.LoadContent(c.Paths.Source, c.Paths.Taxonomies, loc, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	index, err := site.NewIndex(items, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pages, err := site.BuildPages(index, tax, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err := New(c, pages, tax, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range pages {
+		if p.ID != "categories" && p.ID != "page:about" {
+			continue
+		}
+		data, err := r.Render(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		s := string(data)
+		if !strings.Contains(s, `src="/images/logo.svg"`) || strings.Contains(s, `>B.</div>`) {
+			t.Fatal("original logo not applied")
+		}
+		if !strings.Contains(s, `href="/about/"`) || !strings.Contains(s, `href="/links/"`) {
+			t.Fatal("page navigation missing")
+		}
+		want := `href="/categories/" aria-current="location"`
+		if p.ID == "page:about" {
+			want = `href="/about/" aria-current="location"`
+		}
+		if !strings.Contains(s, want) {
+			t.Fatalf("current section missing: %s", p.ID)
+		}
+	}
+}
+
 func TestStandaloneTokenizerAndOriginalText(t *testing.T) {
 	body := `<!doctype html><html><head><meta name="robots" content="noindex, follow"></head><body><!-- </body> --><script>const fake = "</body>";</script><p>Original  spacing</p></body></html>`
 	script := `<script src="/assets/stats.js" defer></script>`

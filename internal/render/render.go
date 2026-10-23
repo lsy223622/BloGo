@@ -36,6 +36,7 @@ type view struct {
 	Categories, Tags   []site.Term
 	Recent             []*content.ContentItem
 	Assets             map[string]string
+	AboutURL, LinksURL string
 }
 
 func New(c *config.Config, pages []*site.Page, tax *content.Taxonomies, assets map[string]string) (*Renderer, error) {
@@ -66,6 +67,12 @@ func New(c *config.Config, pages []*site.Page, tax *content.Taxonomies, assets m
 		"cover":    func(item *content.ContentItem) string { cover, _ := item.Meta.Extra["cover"].(string); return cover },
 		"category": func(id string) string { return tax.Categories[id].Name },
 		"tag":      func(id string) string { return tax.Tags[id].Name },
+		"navCurrent": func(p *site.Page, target string) bool {
+			if target == "/" {
+				return p.ID == "home" || strings.HasPrefix(p.ID, "home:page:") || p.Kind == "post"
+			}
+			return strings.HasPrefix(p.URL, target)
+		},
 	}
 	t := template.New("blog").Funcs(funcs)
 	// Compact the template shell before inserting trusted author bodies. Register
@@ -127,6 +134,12 @@ func (r *Renderer) Render(p *site.Page) ([]byte, error) {
 		v.TOC = body.TOC
 	}
 	for _, page := range r.pages {
+		if page.ID == "page:about" {
+			v.AboutURL = page.URL
+		}
+		if page.ID == "page:links" {
+			v.LinksURL = page.URL
+		}
 		if page.ID == "categories" {
 			v.Categories = page.Terms
 		}
