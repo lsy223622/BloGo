@@ -45,7 +45,7 @@ func Convert(body, explicitSummary string, maxChars int) (Result, error) {
 			id, _ := h.AttributeString("id")
 			result.TOC = append(result.TOC, Heading{h.Level, string(id.([]byte)), plainInline(h, source, false)})
 		}
-		if n.Kind() == ast.KindParagraph && result.Summary == "" {
+		if (n.Kind() == ast.KindParagraph || n.Kind() == ast.KindTextBlock) && result.Summary == "" {
 			result.Summary = plainInline(n, source, true)
 		}
 		return ast.WalkContinue, nil
@@ -79,6 +79,9 @@ func plainInline(root ast.Node, source []byte, summary bool) string {
 			return ast.WalkSkipChildren, nil
 		}
 		if summary && n.Kind() == ast.KindCodeSpan {
+			return ast.WalkSkipChildren, nil
+		}
+		if summary && n.Kind() == ast.KindImage {
 			return ast.WalkSkipChildren, nil
 		}
 		if raw, ok := n.(*ast.RawHTML); ok {

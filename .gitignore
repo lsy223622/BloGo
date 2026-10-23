@@ -4,3 +4,4 @@
 /output/
 /runtime/
 /.playwright-cli/
+__pycache__/

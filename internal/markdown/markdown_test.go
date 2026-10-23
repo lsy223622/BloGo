@@ -40,3 +40,15 @@ func TestSummaryUsesFirstMeaningfulASTParagraph(t *testing.T) {
 		t.Fatalf("explicit summary: %+v %v", r, err)
 	}
 }
+
+func TestSummaryFromTightListSkipsImageOnlyParagraph(t *testing.T) {
+	for _, body := range []string{
+		"# 标题\n\n- 迁移网站的注意事项。\n- 下一条。\n",
+		"![2025-07-01T15:45:29.png](https://example.com/image.png)\n\n迁移网站的注意事项。\n",
+	} {
+		r, err := Convert(body, "", 160)
+		if err != nil || r.Summary != "迁移网站的注意事项。" {
+			t.Errorf("summary %q: %v", r.Summary, err)
+		}
+	}
+}

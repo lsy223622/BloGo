@@ -36,6 +36,7 @@ go run ./cmd/blog dev --config config.yaml --output output/dev --listen 127.0.0.
 - [Linux 部署与回滚](docs/deployment.md)
 - [统计、指标与备份恢复](docs/statistics.md)
 - [安全与权限验收](docs/security-validation.md)
+- [本地博文试用导入](docs/local-preview-import.md)
 
 静态页面由 Nginx 提供；统计停机不阻断阅读。公开统计每五分钟刷新，只含本轮 Manifest 中启用统计的 Public 页面。Unlisted 明细与已删除页面历史留在私有报告。浏览器使用每日随机标识，服务端只持久化按日期 HMAC 的访客摘要与来源主机名。
 
