@@ -50,7 +50,7 @@ func ValidateRoutes(items []*content.ContentItem, staticFiles []string) error {
 		files[file] = owner
 		return nil
 	}
-	for _, file := range []string{"index.html", "categories/index.html", "tags/index.html", "archives/index.html", "updates/index.html", "404/index.html", "rss.xml", "sitemap.xml", "robots.txt"} {
+	for _, file := range []string{"index.html", "tags/index.html", "archives/index.html", "updates/index.html", "404/index.html", "rss.xml", "sitemap.xml", "robots.txt"} {
 		if err := addFile(file, "system route"); err != nil {
 			return err
 		}

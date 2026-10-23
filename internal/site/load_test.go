@@ -25,7 +25,7 @@ func TestGateA(t *testing.T) {
 	}
 }
 
-func TestTaxonomySelectionBeforeIndexing(t *testing.T) {
+func TestConfiguredTaxonomiesDoNotLimitArticleGeneration(t *testing.T) {
 	root := t.TempDir()
 	source := filepath.Join(root, "content")
 	if err := os.MkdirAll(filepath.Join(source, "posts"), 0700); err != nil {
@@ -46,8 +46,7 @@ func TestTaxonomySelectionBeforeIndexing(t *testing.T) {
 		}
 	}
 	for _, status := range []string{"public", "unlisted", "draft"} {
-		// Excluded sources must not reserve IDs or URLs of retained articles.
-		body := "---\nid: keep\nslug: keep\ntitle: Excluded\nstatus: " + status + "\npublished: 2026-10-23\ncategories: [missing, another-missing]\n---\nBody"
+		body := "---\ntitle: Uncategorized\nstatus: " + status + "\npublished: 2026-10-23\ncategories: [missing, another-missing]\n---\nBody"
 		if err := os.WriteFile(filepath.Join(source, "posts", status+".md"), []byte(body), 0600); err != nil {
 			t.Fatal(err)
 		}
@@ -57,14 +56,21 @@ func TestTaxonomySelectionBeforeIndexing(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(items) != 2 || items[0].ID != "post:keep" || items[1].ID != "post:uncategorized" {
+		want := 4
+		if preview {
+			want++
+		}
+		if len(items) != want {
 			t.Fatalf("preview %v: unexpected items %+v", preview, items)
 		}
-		if strings.Join(items[0].Meta.Tags, ",") != "used" || len(items[1].Meta.Tags) != 0 {
-			t.Fatal("unconfigured tags retained")
-		}
-		if strings.Join(items[0].Meta.Categories, ",") != "tech" {
-			t.Fatal("mixed categories were not filtered or deduplicated")
+		for _, item := range items {
+			if item.ID == "post:keep" {
+				if strings.Join(item.Meta.Tags, ",") != "used" || strings.Join(item.Meta.Categories, ",") != "tech" {
+					t.Fatal("configured terms were not filtered or deduplicated")
+				}
+			} else if len(item.Meta.Tags) != 0 || len(item.Meta.Categories) != 0 {
+				t.Fatalf("unconfigured terms retained: %+v", item.Meta)
+			}
 		}
 		tax, err := content.ReadTaxonomies(taxFile)
 		if err != nil {
@@ -78,10 +84,10 @@ func TestTaxonomySelectionBeforeIndexing(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		if len(index.ByCategory) != 1 || len(index.ByCategory["tech"]) != 1 {
+			t.Fatalf("configured category aggregation: %+v", index.ByCategory)
+		}
 		for _, p := range pages {
-			if p.ID == "categories" && (len(p.Terms) != 1 || p.Terms[0].ID != "tech") {
-				t.Fatalf("categories: %+v", p.Terms)
-			}
 			if p.ID == "tags" && (len(p.Terms) != 1 || p.Terms[0].ID != "used") {
 				t.Fatalf("tags: %+v", p.Terms)
 			}

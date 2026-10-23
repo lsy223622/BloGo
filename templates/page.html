@@ -30,7 +30,7 @@
 <a class="brand" href="/" aria-label="{{.Site.Title}} 首页"><span class="brand-mark" aria-hidden="true"></span></a>
 <div class="nav-links">
 <a href="/" {{if navCurrent .Page "/"}}aria-current="location"{{end}}>首页</a>
-<a href="/categories/" {{if navCurrent .Page "/categories/"}}aria-current="location"{{end}}>分类</a>
+{{range .Categories}}<a href="{{.URL}}" {{if navCurrent $.Page .URL}}aria-current="location"{{end}}>{{.Name}}</a>{{end}}
 <a href="/tags/" {{if navCurrent .Page "/tags/"}}aria-current="location"{{end}}>标签</a>
 <a href="/archives/" {{if navCurrent .Page "/archives/"}}aria-current="location"{{end}}>归档</a>
 <a href="/updates/" {{if navCurrent .Page "/updates/"}}aria-current="location"{{end}}>更新</a>
@@ -62,8 +62,8 @@
 </main>
 <aside class="right-sidebar" aria-label="站点信息">
 {{if .Recent}}<section><h2>最近更新</h2><ul>{{range .Recent}}<li><a href="{{.URL}}">{{.Meta.Title}}</a></li>{{end}}</ul></section>{{end}}
-{{if .Categories}}<section><h2>分类</h2><ul>{{range .Categories}}<li><a href="{{.URL}}">{{.Name}}</a><small>{{.Count}}</small></li>{{end}}</ul></section>{{end}}
-{{if .Tags}}<section><h2>标签</h2><div class="term-cloud">{{range .Tags}}<a href="{{.URL}}">{{.Name}}</a>{{end}}</div></section>{{end}}
+{{if .Tags}}<section><h2>标签</h2><div class="term-cloud sidebar-tags" tabindex="0" role="region" aria-label="标签">{{range .Tags}}<a href="{{.URL}}">{{.Name}}</a>{{end}}</div></section>{{end}}
+{{with .Extra.profile}}<section class="site-profile"><h2>关于站长</h2><ul class="profile-links">{{range .}}<li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/images/profile.svg#{{.type}}"></use></svg><span>{{if .url}}<a href="{{.url}}" rel="noopener">{{.label}}</a>{{else}}{{.label}}{{end}}</span></li>{{end}}</ul></section>{{end}}
 <section class="popular" hidden><h2>热门文章</h2><ul data-popular-posts></ul></section>
 <footer class="site-footer"><a href="/rss.xml">RSS</a><a href="https://github.com/lsy223622/BloGo">由 BloGo 构建</a></footer>
 </aside>

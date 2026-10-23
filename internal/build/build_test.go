@@ -20,7 +20,7 @@ func TestBuildEndToEndAndReplaceWithoutStaleFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(result.Manifest.Pages) != 11 {
+	if len(result.Manifest.Pages) != 10 {
 		t.Fatalf("page count %d", len(result.Manifest.Pages))
 	}
 	for _, file := range []string{"public/index.html", "public/posts/a/index.html", "public/404/index.html", "public/about/index.html", "public/rss.xml", "public/sitemap.xml", "public/robots.txt", "meta/manifest.json", "meta/fingerprint"} {
@@ -53,7 +53,7 @@ func TestBuildEndToEndAndReplaceWithoutStaleFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(again.Manifest.Pages) != 10 {
+	if len(again.Manifest.Pages) != 9 {
 		t.Fatal("removed content retained")
 	}
 	if _, err = os.Stat(filepath.Join(out, "public/about")); !os.IsNotExist(err) {
@@ -95,7 +95,7 @@ func TestFailedBuildPreservesPreviousOutput(t *testing.T) {
 	}
 }
 
-func TestCategoryConfigurationRemovesAndRestoresAllArticleOutput(t *testing.T) {
+func TestCategoryConfigurationUpdatesListsWithoutRemovingArticles(t *testing.T) {
 	for _, preview := range []bool{false, true} {
 		c := buildFixture(t)
 		put(t, c.Paths.Source, "posts/a.md", "---\ntitle: Selected article\nstatus: public\npublished: 2026-10-23\ncategories: [missing, tech]\ntags: [known, unknown]\naliases: [/old-a/]\n---\nBody")
@@ -114,12 +114,13 @@ func TestCategoryConfigurationRemovesAndRestoresAllArticleOutput(t *testing.T) {
 			for _, p := range result.Manifest.Pages {
 				found = found || p.ID == "post:a"
 			}
-			if found != configured || (result.Redirects["/old-a/"] != "") != configured {
-				t.Fatal("excluded article retained in manifest or redirects")
+			if !found || result.Redirects["/old-a/"] == "" {
+				t.Fatal("article missing from manifest or redirects")
 			}
 			for _, file := range []string{"posts/a/index.html", "categories/tech/index.html", "tags/known/index.html"} {
 				_, err := os.Stat(filepath.Join(out, "public", filepath.FromSlash(file)))
-				if configured && err != nil || !configured && !os.IsNotExist(err) {
+				wantFile := configured || file != "categories/tech/index.html"
+				if wantFile && err != nil || !wantFile && !os.IsNotExist(err) {
 					t.Fatalf("configured %v: %s: %v", configured, file, err)
 				}
 			}
@@ -128,7 +129,7 @@ func TestCategoryConfigurationRemovesAndRestoresAllArticleOutput(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				if strings.Contains(string(data), "/posts/a/") != configured {
+				if !strings.Contains(string(data), "/posts/a/") {
 					t.Fatalf("configured %v: article reference in %s", configured, file)
 				}
 			}

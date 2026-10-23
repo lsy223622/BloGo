@@ -84,7 +84,7 @@ func TestLogoAndSectionNavigation(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, p := range pages {
-		if p.ID != "categories" && p.ID != "page:about" {
+		if p.ID != "category:tech" && p.ID != "page:about" {
 			continue
 		}
 		data, err := r.Render(p)
@@ -98,7 +98,14 @@ func TestLogoAndSectionNavigation(t *testing.T) {
 		if !strings.Contains(s, `href="/about/"`) || !strings.Contains(s, `href="/links/"`) {
 			t.Fatal("page navigation missing")
 		}
-		want := `href="/categories/" aria-current="location"`
+		nav := strings.SplitN(strings.SplitN(s, `<div class="nav-links">`, 2)[1], `</div>`, 2)[0]
+		for _, categoryURL := range []string{"/categories/hardware/", "/categories/tech/"} {
+			position := strings.Index(nav, `href="`+categoryURL+`"`)
+			if position < strings.Index(nav, `href="/"`) || position > strings.Index(nav, `href="/tags/"`) {
+				t.Fatal("category navigation must be between home and tags")
+			}
+		}
+		want := `href="/categories/tech/" aria-current="location"`
 		if p.ID == "page:about" {
 			want = `href="/about/" aria-current="location"`
 		}
@@ -144,6 +151,48 @@ func TestMermaidScriptOnlyLoadsOnDiagramPages(t *testing.T) {
 		if strings.Contains(string(out), `src="/vendor/mermaid.js"`) != test.diagram {
 			t.Fatalf("conditional diagram script: %s", out)
 		}
+	}
+}
+
+func TestSidebarProfileUsesTypedIconsAndEscapesMetadata(t *testing.T) {
+	c, err := config.Load("../../config.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.Extra = map[string]any{"profile": []any{
+		map[string]any{"type": "qq", "label": "123456789"},
+		map[string]any{"type": "email", "label": "hello@example.com", "url": "mailto:hello@example.com"},
+		map[string]any{"type": "github", "label": "<b>Writer</b>", "url": "https://github.com/example"},
+		map[string]any{"type": "website", "label": "Website", "url": "https://example.com"},
+		map[string]any{"type": "cc", "label": "CC BY-NC-SA 4.0", "url": "https://creativecommons.org/licenses/by-nc-sa/4.0/"},
+	}}
+	p := &site.Page{ID: "home", URL: "/", Kind: "system", Title: "Home"}
+	pages := []*site.Page{p, {ID: "tags", Terms: []site.Term{{ID: "used", Name: "Used", URL: "/tags/used/"}}}}
+	r, err := New(c, pages, &content.Taxonomies{}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := r.Render(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(out)
+	profileStart := strings.Index(s, `<section class="site-profile"`)
+	if profileStart < strings.Index(s, `</main>`) || profileStart < strings.Index(s, `<h2>标签</h2>`) || profileStart > strings.Index(s, `<section class="popular"`) {
+		t.Fatal("profile must be in the shared sidebar after tags")
+	}
+	for _, kind := range []string{"qq", "email", "github", "website", "cc"} {
+		if !strings.Contains(s, `/images/profile.svg#`+kind+`"`) {
+			t.Fatalf("missing preset icon for %s", kind)
+		}
+	}
+	if !strings.Contains(s, `href="mailto:hello@example.com"`) || !strings.Contains(s, `&lt;b&gt;Writer&lt;/b&gt;`) || strings.Contains(s, `<b>Writer</b>`) {
+		t.Fatal("profile links or metadata escaping")
+	}
+	c.Extra = nil
+	out, err = r.Render(p)
+	if err != nil || strings.Contains(string(out), `class="site-profile"`) {
+		t.Fatal("unconfigured profile rendered")
 	}
 }
 

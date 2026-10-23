@@ -142,8 +142,8 @@ func (r *Renderer) Render(p *site.Page) ([]byte, error) {
 		if page.ID == "page:links" && page.Visibility == content.Public {
 			v.LinksURL = page.URL
 		}
-		if page.ID == "categories" {
-			v.Categories = page.Terms
+		if page.Kind == "category" {
+			v.Categories = append(v.Categories, site.Term{ID: strings.TrimPrefix(page.ID, "category:"), Name: page.Title, URL: page.URL})
 		}
 		if page.ID == "tags" {
 			v.Tags = page.Terms

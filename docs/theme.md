@@ -17,7 +17,20 @@ extra:
       description: Go 编程语言
 ```
 
-导航 logo 使用原始 SVG 作为遮罩，保留 780×720 viewBox 和图形比例，透明背景上的填充跟随主题强调色；favicon 使用原始 SVG。导航显示当前栏目，“关于”和“友链”只列出对应的 Public 页面，移动端链接组可换行。RSS 和构建署名位于信息栏末尾，移动端随信息栏排在正文之后。
+站点配置的 `extra.profile` 控制标签下面的“关于站长”信息，按列表顺序显示。每项包含 `type`、`label` 和可选的 `url`；支持的图标类型为 `qq`、`email`、`github`、`website`、`cc`。不填写 `url` 时显示普通文字。图标保存在本地 `static/images/profile.svg`，使用当前主题的文字颜色。
+
+```yaml
+extra:
+  profile:
+    - type: email
+      label: hello@example.com
+      url: mailto:hello@example.com
+    - type: cc
+      label: CC BY-NC-SA 4.0
+      url: https://creativecommons.org/licenses/by-nc-sa/4.0/
+```
+
+导航 logo 使用原始 SVG 作为遮罩，保留 780×720 viewBox 和图形比例，透明背景上的填充跟随主题强调色；favicon 使用原始 SVG。首页与标签之间直接列出已配置且有公开文章的分类，点击进入对应文章列表。导航显示当前栏目，“关于”和“友链”只列出对应的 Public 页面，移动端链接组可换行。右栏标签区显示四行半，超出部分可用滚轮、触摸或键盘滚动；每行标签高 26px，行距 8px。RSS 和构建署名位于信息栏末尾，移动端随信息栏排在正文之后。
 
 表格单元格保留可读的最小列宽，窄屏在表格内部横向滚动；长 URL 可在单元格内换行，避免原生 HTML 表格被压成逐字排列。
 

@@ -120,12 +120,10 @@ func BuildPages(index *SiteIndex, tax *content.Taxonomies, pageSize int) ([]*Pag
 	if err := list("updates", "system", "/updates/", "最近更新", index.ByUpdated, nil); err != nil {
 		return nil, err
 	}
-	var categories, tags, archives []Term
+	var tags, archives []Term
 	for _, id := range keys(index.ByCategory) {
 		c := tax.Categories[id]
-		term := Term{ID: id, Name: c.Name, Description: c.Description, Parent: c.Parent, URL: "/categories/" + id + "/", Kind: "category", Count: len(index.ByCategory[id]), Extra: c.Extra}
-		categories = append(categories, term)
-		if err := list("category:"+id, "category", term.URL, c.Name, index.ByCategory[id], nil); err != nil {
+		if err := list("category:"+id, "category", "/categories/"+id+"/", c.Name, index.ByCategory[id], nil); err != nil {
 			return nil, err
 		}
 	}
@@ -155,7 +153,7 @@ func BuildPages(index *SiteIndex, tax *content.Taxonomies, pageSize int) ([]*Pag
 	for _, overview := range []struct {
 		id, u, title string
 		terms        []Term
-	}{{"categories", "/categories/", "分类", categories}, {"tags", "/tags/", "标签", tags}, {"archives", "/archives/", "归档", archives}} {
+	}{{"tags", "/tags/", "标签", tags}, {"archives", "/archives/", "归档", archives}} {
 		if err := add(&Page{ID: overview.id, Kind: "system", URL: overview.u, Title: overview.title, Visibility: content.Public, StatsEnabled: true, Terms: overview.terms}); err != nil {
 			return nil, err
 		}

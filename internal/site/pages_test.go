@@ -34,12 +34,12 @@ func TestAggregatesPaginationAndPageIdentities(t *testing.T) {
 		byID[p.ID] = p
 		byURL[p.URL] = true
 	}
-	for _, id := range []string{"home", "home:page:2", "categories", "category:tech", "category:hardware:page:2", "tags", "tag:pcb", "archives", "archive:2026", "archive:2026-10", "updates", "not-found", "post:hidden"} {
+	for _, id := range []string{"home", "home:page:2", "category:tech", "category:hardware:page:2", "tags", "tag:pcb", "archives", "archive:2026", "archive:2026-10", "updates", "not-found", "post:hidden"} {
 		if byID[id] == nil {
 			t.Errorf("missing %s", id)
 		}
 	}
-	if byID["tag:secret"] != nil || len(index.ByCategory["tech"]) != 2 || len(byID["categories"].Terms) != 2 || len(byID["tags"].Terms) != 1 {
+	if byID["tag:secret"] != nil || len(index.ByCategory["tech"]) != 2 || len(index.ByCategory) != 2 || len(byID["tags"].Terms) != 1 {
 		t.Fatal("aggregation leak or ancestor duplicate")
 	}
 	if byID["home"].Pager.NextURL != "/page/2/" || byID["home:page:2"].Pager.PreviousURL != "/" || byID["category:tech"].URL != "/categories/tech/" {
@@ -63,7 +63,7 @@ func TestEmptyAndInvalidPagination(t *testing.T) {
 		t.Fatal(err)
 	}
 	pages, err := BuildPages(index, &content.Taxonomies{}, 10)
-	if err != nil || len(pages) != 6 {
+	if err != nil || len(pages) != 5 {
 		t.Fatalf("empty pages %d: %v", len(pages), err)
 	}
 	if _, err = BuildPages(index, &content.Taxonomies{}, 0); err == nil {

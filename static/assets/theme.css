@@ -16,3 +16,7 @@
 @media(prefers-reduced-motion:reduce){.icon-button::after{transition:none}}
 
 html.is-changing #main{transition:opacity .14s ease}html.is-animating #main{opacity:0}@media(prefers-reduced-motion:reduce){html.is-changing #main{transition:none}}
+
+.site-profile{grid-column:1/-1}.profile-links li{justify-content:flex-start;align-items:flex-start;gap:9px;margin:9px 0}.profile-links svg{width:16px;height:16px;flex-shrink:0;margin-top:3px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}.profile-links li>span{min-width:0}
+
+.sidebar-tags{--tag-height:26px;--tag-gap:8px;gap:var(--tag-gap);max-height:calc(var(--tag-height)*4.5 + var(--tag-gap)*4);overflow-y:auto;scrollbar-width:none}.sidebar-tags a{line-height:calc(var(--tag-height) - 6px)}.sidebar-tags::-webkit-scrollbar{display:none}.sidebar-tags:focus-visible{outline:2px solid var(--accent);outline-offset:4px}

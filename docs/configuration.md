@@ -9,6 +9,7 @@
 | `site.subtitle` | 页头副标题，可留空 |
 | `site.timezone` | `Asia/Shanghai`，IANA 时区；内置 tzdata |
 | `site.language` | `zh-CN` |
+| `extra.profile` | 标签下面的站长信息列表，每项为 `type`、`label` 和可选的 `url`；图标类型及示例见[主题说明](theme.md) |
 | `paths.source/templates/static` | 构建输入根目录，普通目录且相互独立 |
 | `paths.taxonomies` | `taxonomies.yaml` |
 | `paths.staging/releases/current` | Linux 发布目录与当前版本链接；同一文件系统 |
