@@ -2,10 +2,11 @@
   "use strict";
   const root = document.documentElement;
   const icons = {
-    system: '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4"/>',
+    system: '<path d="M12 2v20M12 7a5 5 0 0 0 0 10M5 5l1.5 1.5M2 12h2M5 19l1.5-1.5M12 4a8 8 0 0 1 0 16c4-3 4-13 0-16Z"/>',
     light: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/>',
     dark: '<path d="M20.5 14a8.5 8.5 0 0 1-10.5-10.5A8.5 8.5 0 1 0 20.5 14Z"/>',
-    wrap: '<path d="M3 5h18M3 10h13a4 4 0 0 1 0 8h-4m3-3-3 3 3 3M3 15h4M3 20h4"/>',
+    wrapOff: '<path d="M3 5h18M3 10h18M3 15h17m-3-3 3 3-3 3M3 20h11"/>',
+    wrapOn: '<path d="M3 5h18M3 10h13a4 4 0 0 1 0 8h-4m3-3-3 3 3 3M3 15h4M3 20h4"/>',
     copy: '<rect x="8" y="3" width="12" height="14" rx="2"/><path d="M16 17v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h3"/>'
   };
   const icon = name => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]}</svg>`;
@@ -71,11 +72,12 @@
       node.setAttribute('aria-label',label); node.dataset.tooltip = label; node.innerHTML = icon(name);
       tools.append(node); return node;
     };
-    const wrap = button('wrap','开启自动换行');
+    const wrap = button('wrapOff','开启自动换行');
     wrap.setAttribute('aria-pressed','false');
     wrap.addEventListener('click', () => {
       const enabled = frame.classList.toggle('is-wrapped');
       wrap.setAttribute('aria-pressed',String(enabled));
+      wrap.innerHTML = icon(enabled ? 'wrapOn' : 'wrapOff');
       wrap.dataset.tooltip = enabled ? '关闭自动换行' : '开启自动换行';
       wrap.setAttribute('aria-label',wrap.dataset.tooltip);
     });
