@@ -30,6 +30,12 @@
   swup.hooks.before('link:anchor', visit => {
     visit.scroll.animate = !motion.matches;
   });
+  swup.hooks.replace('scroll:top', visit => {
+    document.querySelectorAll('[data-swup-scroll-container]').forEach(container => {
+      swup.scrollTo({top:0,left:0},visit.scroll.animate && !motion.matches,container);
+    });
+    return true;
+  });
   // Replacement hooks propagate failures to Swup's normal-navigation fallback.
   swup.hooks.replace('content:replace', async (visit, args, replace) => {
     const incoming = visit.to.document;
