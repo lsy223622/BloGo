@@ -214,3 +214,59 @@ func TestServeReloadAndSchedule(t *testing.T) {
 		t.Fatal("bad YAML replaced settings")
 	}
 }
+
+func TestFailedHTTPReconfigureKeepsRuntimeSnapshot(t *testing.T) {
+	c := runtimeFixture(t)
+	var log bytes.Buffer
+	r, err := startRuntime(context.Background(), c, true, "", "127.0.0.1:25646", &log)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.close()
+	raw, _ := os.ReadFile(c.FilePath())
+	next := strings.Replace(string(raw), "report_interval: 40ms", "report_interval: 40ms\n  details:\n    enabled: true", 1)
+	public, held := filepath.Join(r.result.Output, "public"), filepath.Join(r.result.Output, "held-public")
+	if err = os.Rename(public, held); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if _, e := os.Stat(held); e == nil {
+			os.Rename(held, public)
+		}
+	}()
+	putRuntime(t, c.FilePath(), next)
+	r.nextScan = time.Now().Add(time.Hour)
+	r.nextReport = r.nextScan
+	previous := r.original.FileDigest()
+	r.step(context.Background(), time.Now())
+	if r.config.Stats.Details.Enabled || r.original.FileDigest() != previous || log.Len() == 0 {
+		t.Fatal("failed HTTP reconfigure committed runtime settings", log.String())
+	}
+	if err = os.Rename(held, public); err != nil {
+		t.Fatal(err)
+	}
+	r.step(context.Background(), time.Now())
+	if !r.config.Stats.Details.Enabled {
+		t.Fatal("valid config did not recover")
+	}
+}
+
+func TestScopedProxyReloadKeepsPublishedPage(t *testing.T) {
+	c := runtimeFixture(t)
+	r, err := startRuntime(context.Background(), c, true, "", "127.0.0.1:25646", io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.close()
+	raw, _ := os.ReadFile(c.FilePath())
+	putRuntime(t, c.FilePath(), strings.Replace(string(raw), "server:\n", "server:\n  trusted_proxies: [\"fe80::1%eth0\"]\n", 1))
+	original := r.result.Manifest.BuildID
+	for n := 1; n <= 4; n++ {
+		r.step(context.Background(), time.Now().Add(time.Duration(n)*time.Second))
+		w := httptest.NewRecorder()
+		r.handler.ServeHTTP(w, httptest.NewRequest("GET", "/posts/a/", nil))
+		if w.Code != 200 || r.result.Manifest.BuildID != original || r.config.Server.TrustedProxies[0] != "127.0.0.1" {
+			t.Fatal("bad proxy reload changed published state", w.Code)
+		}
+	}
+}

@@ -2,7 +2,9 @@ package stats
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"io"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -14,6 +16,26 @@ import (
 	"github.com/lsy223622/BloGo/internal/content"
 	"github.com/lsy223622/BloGo/internal/site"
 )
+
+func TestGlobalDisableRejectsOldManifestEvents(t *testing.T) {
+	handler, store, c, _ := apiFixture(t)
+	c.Stats.Enabled = false
+	c.Stats.Details.Enabled = true
+	response := sendEvent(handler, eventBody("a", "post:a", ""), "", "")
+	if response.Code != 404 {
+		t.Fatalf("disabled collector: %d", response.Code)
+	}
+	snapshot, err := store.snapshot(context.Background(), "2026-10-23", "2026-10-17", "2026-09-24")
+	if err != nil || snapshot.PV.All != 0 || snapshot.DetailCount != 0 {
+		t.Fatal("disabled collector wrote data", snapshot, err)
+	}
+	c.Stats.ListenAddr = "127.0.0.1:0"
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err = Serve(ctx, c, io.Discard); err == nil || !strings.Contains(err.Error(), "disabled") {
+		t.Fatal("manual service did not reject disabled statistics before initialization", err)
+	}
+}
 
 func apiFixture(t *testing.T) (*Handler, *Store, *config.Config, *site.Manifest) {
 	t.Helper()

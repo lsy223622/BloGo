@@ -104,7 +104,7 @@ func runtimeConfig(c *config.Config, preview bool, listen string) *config.Config
 		result.Stats.VisitorKeyPath = filepath.Join(root, "statistics/visitor.key")
 		result.Stats.PublicOutput = filepath.Join(root, "public/stats.json")
 		result.Stats.PrivateOutput = filepath.Join(root, "private/report.html")
-		result.Stats.ManifestPath = filepath.Join(root, "collector/manifest.json")
+		result.Stats.ManifestPath = ""
 	}
 	return &result
 }
@@ -190,7 +190,11 @@ func (r *service) build(c *config.Config) (*build.Result, error) {
 		if safe.Build.KeepReleases < 2 {
 			safe.Build.KeepReleases = 2
 		}
-		return build.Publish(&safe)
+		active := ""
+		if r.result != nil {
+			active = r.result.Output
+		}
+		return build.PublishRetaining(&safe, active)
 	}
 	root := r.output
 	if root == "" {
@@ -228,7 +232,7 @@ func (r *service) writeCollectorManifest(result *build.Result) error {
 	if err != nil {
 		return err
 	}
-	target := r.config.Stats.ManifestPath
+	target := filepath.Join(result.Output, "meta/collector-manifest.json")
 	if err = os.MkdirAll(filepath.Dir(target), 0700); err != nil {
 		return err
 	}
@@ -244,7 +248,13 @@ func (r *service) writeCollectorManifest(result *build.Result) error {
 	if err = temp.Close(); err != nil {
 		return err
 	}
-	return os.Rename(temp.Name(), target)
+	if err = os.Rename(temp.Name(), target); err != nil {
+		return err
+	}
+	clone := *r.config
+	clone.Stats.ManifestPath = target
+	r.config = &clone
+	return nil
 }
 
 func (r *service) configureCollector(ctx context.Context) error {
@@ -312,11 +322,15 @@ func (r *service) step(ctx context.Context, now time.Time) {
 		if !reflect.DeepEqual(r.config.Stats, next.Stats) || !reflect.DeepEqual(r.config.Server.TrustedProxies, next.Server.TrustedProxies) {
 			previous, collector := r.config, r.collector
 			r.config = next
-			if err = r.configureCollector(ctx); err != nil {
+			err = r.configureCollector(ctx)
+			if err == nil {
+				err = r.handler.Reconfigure(r.config, r.result, r.collector)
+			}
+			if err != nil {
 				r.config, r.collector = previous, collector
 				r.diagnostic(err)
+				return
 			} else {
-				r.handler.Reconfigure(r.config, r.result, r.collector)
 				r.nextReport = now
 			}
 		} else {
@@ -341,6 +355,7 @@ func (r *service) step(ctx context.Context, now time.Time) {
 				r.diagnostic(e)
 			} else {
 				old := r.result
+				previous, collector := r.config, r.collector
 				if r.preview {
 					e = r.writeCollectorManifest(updated)
 				} else {
@@ -355,6 +370,7 @@ func (r *service) step(ctx context.Context, now time.Time) {
 					e = r.handler.Reconfigure(r.config, updated, r.collector)
 				}
 				if e != nil {
+					r.config, r.collector = previous, collector
 					r.diagnostic(e)
 				} else {
 					r.result = updated

@@ -139,7 +139,7 @@ func decodeEvent(body []byte) (Event, error) {
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
-	if r.URL.Path != "/api/events" {
+	if !h.config.Stats.Enabled || r.URL.Path != "/api/events" {
 		http.NotFound(w, r)
 		return
 	}

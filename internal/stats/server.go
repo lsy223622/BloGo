@@ -13,6 +13,9 @@ import (
 )
 
 func Serve(ctx context.Context, c *config.Config, log io.Writer) error {
+	if !c.Stats.Enabled {
+		return fmt.Errorf("statistics disabled")
+	}
 	if err := c.Validate("stats", ""); err != nil {
 		return err
 	}

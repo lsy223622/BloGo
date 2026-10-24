@@ -40,6 +40,12 @@ func PruneReleases(c *config.Config, current string) error {
 }
 
 func Publish(c *config.Config) (*Result, error) {
+	return PublishRetaining(c, "")
+}
+
+// PublishRetaining keeps the active HTTP snapshot until the server activates
+// the candidate. The server prunes again after that swap succeeds.
+func PublishRetaining(c *config.Config, active string) (*Result, error) {
 	if err := publicationSupported(); err != nil {
 		return nil, err
 	}
@@ -58,10 +64,10 @@ func Publish(c *config.Config) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	return publishLocked(c, fingerprint)
+	return publishLocked(c, fingerprint, active)
 }
 
-func publishLocked(c *config.Config, fingerprint string) (*Result, error) {
+func publishLocked(c *config.Config, fingerprint string, active ...string) (*Result, error) {
 	for _, dir := range []string{c.Paths.Staging, c.Paths.Releases} {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return nil, err
@@ -91,7 +97,7 @@ func publishLocked(c *config.Config, fingerprint string) (*Result, error) {
 		return nil, err
 	}
 	result.Output = release
-	if err = pruneReleases(c.Paths.Releases, release, c.Build.KeepReleases); err != nil {
+	if err = pruneReleases(c.Paths.Releases, release, c.Build.KeepReleases, active...); err != nil {
 		result.Warnings = append(result.Warnings, "release cleanup: "+err.Error())
 	}
 	return result, nil
@@ -129,7 +135,7 @@ func VerifyRelease(root string) (*site.Manifest, error) {
 	return m, nil
 }
 
-func pruneReleases(root, current string, keep int) error {
+func pruneReleases(root, current string, keep int, active ...string) error {
 	type release struct {
 		path     string
 		manifest *site.Manifest
@@ -163,6 +169,10 @@ func pruneReleases(root, current string, keep int) error {
 	retained := 1
 	for _, r := range releases {
 		if r.path == current {
+			continue
+		}
+		if len(active) > 0 && r.path == active[0] {
+			retained++
 			continue
 		}
 		if retained < keep {

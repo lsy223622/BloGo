@@ -41,7 +41,7 @@ tags:
 这里开始写正文。
 ```
 
-本文件位于 `docs/`，不会被当作文章生成。实际内容目录由 `config.yaml` 的
+完整格式源文件还可在 `docs/content-example.md` 中查看。实际内容目录由 `config.yaml` 的
 `paths.content` 指定：项目示例为 `content/`，当前个人导入数据为
 `output/personal-preview/content/`。图片根路径对应各自的 `paths.static`。
 
@@ -61,9 +61,9 @@ tags:
 | `layout` | 文章 `.md` 默认 `article`；独立页面 `.md` 默认 `page`，也可选 `article`；独立页面 `.html` 默认 `standalone`，也可选 `page`。 |
 | `permalink` | 自定义站内根路径，例如 `/notes/my-post/`。默认文章为 `/posts/{slug}/`，独立页面为 `/{slug}/`；嵌套页面保留 `pages/` 下的父目录。规范地址使用小写 ASCII 路径分段和末尾 `/`。 |
 | `aliases` | 旧地址列表，生成重定向，例如 `/old-post/`、`/Legacy.html`。填写路径，不填完整域名、查询或片段；文件形式的别名不带末尾 `/`。 |
-| `categories` | 分类 ID 列表，支持多个分类。对照 `paths.taxonomies` 文件的 `categories`；只有已配置的分类参与展示。都未配置时仍正常生成文章，作为无分类内容。 |
+| `categories` | 分类 ID 列表，支持多个分类。对照 `content/site.yaml`的 `categories`；只有已配置的分类参与展示。都未配置时仍正常生成文章，作为无分类内容。 |
 | `tags` | 标签 ID 列表，对照分类标签文件的 `tags`。只有已配置且被文章使用的标签参与生成与展示；公共标签列表按公开文章统计。 |
-| `summary` | 手写摘要，非空时优先使用。省略或仅有空白时，Markdown 自动提取第一个有意义的段落，包括列表段落；保留行内代码文字，排除代码块、图片、公式、脚本和样式，并按 `build.summary_max_chars` 截断。HTML 源页面缺省为空摘要。 |
+| `summary` | 手写摘要，非空时优先使用。省略或仅有空白时，Markdown 自动提取第一个有意义的段落，包括列表段落；保留行内代码文字，排除代码块、图片、公式、脚本和样式，并按 `content/site.yaml` 的 `summary_max_chars` 截断。HTML 源页面缺省为空摘要。 |
 | `stats` | 布尔值 `true` / `false`，默认 `true`，控制该页面是否启用统计；统计服务需要另行配置。 |
 | `extra` | 扩展映射。默认主题读取文章的 `cover`、`links`，格式见后文。自定义主题可读取其他扩展字段。 |
 
@@ -148,9 +148,9 @@ stats: false
 <meta name="robots" content="noindex">
 ```
 
-站点名称、副标题、每页条数和侧栏站长信息属于站点配置，写在 `config.yaml`，
-不写入文章 Front Matter。配置位置分别是 `site.title`、`site.subtitle`、
-`build.page_size`、`extra.profile`；可对照 `docs/configuration.md`、`docs/theme.md`。
+站点名称、副标题、每页条数和侧栏站长信息属于站点配置，写在 `content/site.yaml`，
+不写入文章 Front Matter。字段分别是 `title`、`subtitle`、
+`page_size`、`profile`；可对照 `docs/configuration.md`、`docs/theme.md`。
 
 # Markdown 语法示例
 

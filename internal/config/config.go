@@ -122,7 +122,8 @@ func Load(file string) (*Config, error) {
 	}
 	for _, proxy := range c.Server.TrustedProxies {
 		if _, e := netip.ParsePrefix(proxy); e != nil {
-			if _, e = netip.ParseAddr(proxy); e != nil {
+			address, err := netip.ParseAddr(proxy)
+			if err != nil || address.Zone() != "" {
 				return nil, fmt.Errorf("%s: trusted_proxies: invalid IP or prefix", file)
 			}
 		}

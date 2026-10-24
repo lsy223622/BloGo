@@ -27,6 +27,16 @@ func fixture(t *testing.T, extra string) string {
 	return file
 }
 
+func TestLoadRejectsScopedTrustedProxy(t *testing.T) {
+	file := fixture(t, "")
+	if err := os.WriteFile(file, []byte("server:\n  trusted_proxies: [\"fe80::1%eth0\"]\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Load(file); err == nil {
+		t.Fatal("scoped proxy accepted")
+	}
+}
+
 func TestLoadDefaultsAndCommandBoundaries(t *testing.T) {
 	file := fixture(t, "")
 	c, err := Load(file)

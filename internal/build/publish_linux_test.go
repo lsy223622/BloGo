@@ -31,6 +31,32 @@ func TestPublishedDataMovesWithUpgrade(t *testing.T) {
 	}
 }
 
+func TestPublishRetainsActiveHTTPReleaseUntilActivation(t *testing.T) {
+	c := buildFixture(t)
+	c.Build.KeepReleases = 1
+	active, err := Publish(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var candidate *Result
+	for n := 0; n < 4; n++ {
+		put(t, c.Paths.Static, "example.txt", string(rune('a'+n)))
+		candidate, err = PublishRetaining(c, active.Output)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err = os.Stat(filepath.Join(active.Output, "public/index.html")); err != nil {
+			t.Fatal("active HTTP release pruned", err)
+		}
+	}
+	if err = PruneReleases(c, candidate.Output); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = os.Stat(active.Output); !os.IsNotExist(err) {
+		t.Fatal("old release not pruned after activation", err)
+	}
+}
+
 func TestPublishAssetsBelongToCurrentSnapshot(t *testing.T) {
 	c := buildFixture(t)
 	c.Build.KeepReleases = 2
