@@ -1,6 +1,7 @@
 package build
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path"
@@ -13,6 +14,30 @@ import (
 	"github.com/lsy223622/BloGo/internal/filelock"
 	"github.com/lsy223622/BloGo/internal/site"
 )
+
+func ReadPublished(root string) (*Result, error) {
+	target, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		return nil, err
+	}
+	manifest, err := VerifyRelease(target)
+	if err != nil {
+		return nil, err
+	}
+	data, err := os.ReadFile(filepath.Join(target, "meta/redirects.json"))
+	if err != nil {
+		return nil, err
+	}
+	var redirects map[string]string
+	if err = json.Unmarshal(data, &redirects); err != nil {
+		return nil, err
+	}
+	return &Result{Output: target, Manifest: manifest, Redirects: redirects}, nil
+}
+
+func PruneReleases(c *config.Config, current string) error {
+	return pruneReleases(c.Paths.Releases, current, c.Build.KeepReleases)
+}
 
 func Publish(c *config.Config) (*Result, error) {
 	if err := publicationSupported(); err != nil {

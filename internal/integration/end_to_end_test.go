@@ -30,11 +30,12 @@ func TestSiteAndStatisticsAcrossContentRevisions(t *testing.T) {
 	for _, name := range []string{"content", "templates", "static"} {
 		must(os.CopyFS(filepath.Join(root, name), os.DirFS(filepath.Join("../..", name))))
 	}
-	tax, err := os.ReadFile("../../taxonomies.yaml")
+	tax, err := os.ReadFile(filepath.Join(root, "content/site.yaml"))
 	must(err)
-	must(os.WriteFile(filepath.Join(root, "taxonomies.yaml"), tax, 0644))
+	tax = bytes.Replace(tax, []byte("page_size: 10"), []byte("page_size: 1"), 1)
+	must(os.WriteFile(filepath.Join(root, "content/site.yaml"), tax, 0644))
 	configFile := filepath.Join(root, "config.yaml")
-	must(os.WriteFile(configFile, []byte("site:\n  title: Integration\n  base_url: https://blog.example\npaths:\n  source: content\n  templates: templates\n  static: static\n  taxonomies: taxonomies.yaml\nbuild:\n  page_size: 1\n"), 0644))
+	must(os.WriteFile(configFile, []byte("server:\n  base_url: https://blog.example\n"), 0644))
 	c, err := config.Load(configFile)
 	must(err)
 	out := filepath.Join(root, "output")

@@ -129,10 +129,14 @@ func buildSite(c *config.Config, output string, preview bool, fingerprint string
 	if err != nil {
 		return nil, invalid(err)
 	}
+	rulesJSON, err := json.Marshal(rules)
+	if err != nil {
+		return nil, err
+	}
 	for _, file := range []struct {
 		name string
 		data []byte
-	}{{"public/rss.xml", feed}, {"public/sitemap.xml", sitemap}, {"public/robots.txt", site.Robots(model.Site.BaseURL)}, {"meta/redirects.conf", redirects}, {"meta/fingerprint", []byte(fingerprint + "\n")}} {
+	}{{"public/rss.xml", feed}, {"public/sitemap.xml", sitemap}, {"public/robots.txt", site.Robots(model.Site.BaseURL)}, {"meta/redirects.conf", redirects}, {"meta/redirects.json", rulesJSON}, {"meta/fingerprint", []byte(fingerprint + "\n")}} {
 		if err = writeFile(stage, file.name, file.data); err != nil {
 			return nil, err
 		}
