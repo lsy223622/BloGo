@@ -94,9 +94,6 @@ func plainInline(root ast.Node, source []byte, summary bool) string {
 		if n.Kind() == kindMathInline || n.Kind() == kindMathBlock {
 			return ast.WalkSkipChildren, nil
 		}
-		if summary && n.Kind() == ast.KindCodeSpan {
-			return ast.WalkSkipChildren, nil
-		}
 		if summary && n.Kind() == ast.KindImage {
 			return ast.WalkSkipChildren, nil
 		}

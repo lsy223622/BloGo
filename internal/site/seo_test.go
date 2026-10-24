@@ -14,7 +14,7 @@ func TestFeedSitemapNavigationAndRedirects(t *testing.T) {
 	recent := old.Add(time.Hour)
 	a := indexedItem("a", content.Post, content.Public, &old, &old)
 	a.Meta.Title = "A & B"
-	a.Body = "正文摘要。"
+	a.Body = "正文 `v3.x` 摘要。"
 	a.Aliases = []string{"/old.html"}
 	b := indexedItem("b", content.Post, content.Public, &recent, &recent)
 	h := indexedItem("hidden", content.Post, content.Unlisted, &recent, &recent)
@@ -48,7 +48,7 @@ func TestFeedSitemapNavigationAndRedirects(t *testing.T) {
 	if err = xml.Unmarshal(feed, &rss); err != nil {
 		t.Fatal(err)
 	}
-	if len(rss.Channel.Items) != 2 || rss.Channel.Items[1].Title != "A & B" || rss.Channel.Items[1].Description != "正文摘要。" || strings.Contains(string(feed), "hidden") {
+	if len(rss.Channel.Items) != 2 || rss.Channel.Items[1].Title != "A & B" || rss.Channel.Items[1].Description != "正文 v3.x 摘要。" || strings.Contains(string(feed), "hidden") {
 		t.Fatalf("feed %s", feed)
 	}
 	sitemap, err := Sitemap(pages, "https://example.com")

@@ -70,6 +70,10 @@ func TestSummaryUsesFirstMeaningfulASTParagraph(t *testing.T) {
 	if r.Summary != "中文 & 正文" {
 		t.Fatalf("summary %q", r.Summary)
 	}
+	r, err = Convert(source, "", 160)
+	if err != nil || r.Summary != "中文 & 正文 secretInline 后文。" {
+		t.Fatalf("summary exclusions: %+v %v", r, err)
+	}
 	r, err = Convert(source, " 手写  摘要 ", 160)
 	if err != nil || r.Summary != "手写 摘要" {
 		t.Fatalf("explicit summary: %+v %v", r, err)
@@ -85,6 +89,28 @@ func TestSummaryFromTightListSkipsImageOnlyParagraph(t *testing.T) {
 		if err != nil || r.Summary != "迁移网站的注意事项。" {
 			t.Errorf("summary %q: %v", r.Summary, err)
 		}
+	}
+}
+
+func TestSummaryKeepsInlineCodeText(t *testing.T) {
+	for _, test := range []struct{ body, want string }{
+		{"- 这一篇接着记录 XDUClassVideoDownloader 的 `v3.x`。", "这一篇接着记录 XDUClassVideoDownloader 的 v3.x。"},
+		{"- 到 `v4.3.0-beta` 时，XDUClassVideoDownloader 已经有单课程下载、整学期自动下载、新旧接口兼容、四种认证方式、跳周、字幕和视频合并。", "到 v4.3.0-beta 时，XDUClassVideoDownloader 已经有单课程下载、整学期自动下载、新旧接口兼容、四种认证方式、跳周、字幕和视频合并。"},
+		{"`first meaningful paragraph`\n\nLater paragraph.", "first meaningful paragraph"},
+		{"使用 `x < y` 和 `$literal$`。", "使用 x < y 和 $literal$。"},
+	} {
+		r, err := Convert(test.body, "", 160)
+		if err != nil || r.Summary != test.want {
+			t.Errorf("summary = %q, want %q: %v", r.Summary, test.want, err)
+		}
+		again, err := Convert(test.body, "", 160)
+		if err != nil || !reflect.DeepEqual(r, again) {
+			t.Fatal("summary conversion is not stable")
+		}
+	}
+	r, err := Convert("中文 `版本号` 后文。", "", 5)
+	if err != nil || r.Summary != "中文 版本" {
+		t.Fatalf("Unicode summary limit: %q, %v", r.Summary, err)
 	}
 }
 
