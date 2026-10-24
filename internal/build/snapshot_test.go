@@ -16,6 +16,8 @@ func buildFixture(t *testing.T) *config.Config {
 	put(t, root, "content/posts/a.md", "---\ntitle: A\nstatus: public\npublished: 2026-10-23\n---\nBody.")
 	put(t, root, "templates/page.html", `{{define "page"}}<!doctype html><html><head><title>{{.Page.Title}}</title></head><body>{{.Body}}{{range .Page.Items}}<a href="{{.URL}}">{{.Meta.Title}}</a>{{end}}</body></html>{{end}}`)
 	put(t, root, "static/assets/theme.css", "body { color: black; }")
+	put(t, root, "static/images/logo.svg", `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M1 1h22v22H1z"/></svg>`)
+	put(t, root, "static/images/favicon.svg", `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M1 1h22v22H1z"/></svg>`)
 	collector, err := os.ReadFile("../../static/assets/stats.js")
 	if err != nil {
 		t.Fatal(err)

@@ -204,7 +204,7 @@
       image.addEventListener("click", open);
       image.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); open(); } });
     });
-    fetch("/data/stats.json", {cache: "no-cache"}).then((response) => { if (!response.ok) throw new Error("stats"); return response.json(); }).then((data) => {
+    if (main.dataset.statsEnabled === "true") fetch("/data/stats.json", {cache: "no-cache"}).then((response) => { if (!response.ok) throw new Error("stats"); return response.json(); }).then((data) => {
       if (main !== activeMain) return;
       main.querySelectorAll("[data-views-for]").forEach((node) => {
         const count = data.pages?.[node.dataset.viewsFor]?.views;

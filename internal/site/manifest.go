@@ -63,7 +63,7 @@ func (m *Manifest) Validate(preview bool) error {
 				return fmt.Errorf("post missing published date %s", p.ID)
 			}
 		case "system", "category", "tag", "archive", "pagination":
-			if p.Visibility != content.Public || !p.StatsEnabled {
+			if p.Visibility != content.Public {
 				return fmt.Errorf("invalid system page visibility/stats %s", p.ID)
 			}
 		default:

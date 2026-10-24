@@ -85,11 +85,25 @@ func buildSite(c *config.Config, output string, preview bool, fingerprint string
 	if err != nil {
 		return nil, invalid(err)
 	}
+	for _, page := range pages {
+		if !model.Stats.Enabled || page.Visibility == content.Draft {
+			page.StatsEnabled = false
+		}
+	}
 	site.ApplyNavigation(pages, index)
 	public := filepath.Join(stage, "public")
 	assets, err := CopyAssets(model.Paths.Static, public, pages, model.Paths.Assets)
 	if err != nil {
 		return nil, invalid(err)
+	}
+	for _, resource := range []string{model.Content.Logo, model.Content.Favicon} {
+		info, err := os.Stat(filepath.Join(public, filepath.FromSlash(resource[1:])))
+		if err != nil {
+			return nil, invalid(fmt.Errorf("brand resource %s: %w", resource, err))
+		}
+		if !info.Mode().IsRegular() {
+			return nil, invalid(fmt.Errorf("brand resource must be a file: %s", resource))
+		}
 	}
 	renderer, err := render.New(model, pages, tax, assets)
 	if err != nil {

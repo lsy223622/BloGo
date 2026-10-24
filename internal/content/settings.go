@@ -2,7 +2,9 @@ package content
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
+	"strings"
 
 	"github.com/lsy223622/BloGo/internal/yamlutil"
 )
@@ -58,6 +60,11 @@ func ParseSettings(file string, data []byte) (*Settings, error) {
 	}
 	if s.PageSize < 1 || s.SummaryMaxChars < 1 {
 		return nil, fmt.Errorf("%s: page_size and summary_max_chars must be positive", file)
+	}
+	for _, resource := range []string{s.Logo, s.Favicon} {
+		if !strings.HasPrefix(resource, "/") || !fs.ValidPath(strings.TrimPrefix(resource, "/")) || strings.ContainsAny(resource, "?#%\\") {
+			return nil, fmt.Errorf("%s: logo and favicon must be absolute local resource paths", file)
+		}
 	}
 	for _, p := range s.Profile {
 		switch p.Type {

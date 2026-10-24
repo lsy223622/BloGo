@@ -39,6 +39,8 @@ type view struct {
 	Assets             map[string]string
 	AboutURL, LinksURL string
 	Mermaid            bool
+	Logo, Favicon      string
+	StatsEnabled       bool
 }
 
 func New(c *config.Config, pages []*site.Page, tax *content.Taxonomies, assets map[string]string) (*Renderer, error) {
@@ -76,6 +78,9 @@ func New(c *config.Config, pages []*site.Page, tax *content.Taxonomies, assets m
 		"cover":    func(item *content.ContentItem) string { cover, _ := item.Meta.Extra["cover"].(string); return cover },
 		"category": func(id string) string { return tax.Categories[id].Name },
 		"tag":      func(id string) string { return tax.Tags[id].Name },
+		"countable": func(item *content.ContentItem) bool {
+			return c.Stats.Enabled && item.Stats && item.Status == content.Public
+		},
 		"navCurrent": func(p *site.Page, target string) bool {
 			if target == "/" {
 				return p.ID == "home" || strings.HasPrefix(p.ID, "home:page:") || p.Kind == "post"
@@ -125,7 +130,7 @@ func New(c *config.Config, pages []*site.Page, tax *content.Taxonomies, assets m
 func (r *Renderer) Render(p *site.Page) ([]byte, error) {
 	if p.Content != nil && p.Content.Layout == "standalone" {
 		script := ""
-		if p.StatsEnabled && r.assets["stats.js"] != "" {
+		if r.config.Stats.Enabled && p.StatsEnabled && p.Visibility != content.Draft && r.assets["stats.js"] != "" {
 			var b bytes.Buffer
 			t := template.Must(template.New("tracking").Parse(`<script src="{{.Src}}" data-page-id="{{.ID}}" data-site-timezone="{{.Timezone}}" defer></script>`))
 			if err := t.Execute(&b, struct{ Src, ID, Timezone string }{r.assets["stats.js"], p.ID, r.config.Site.Timezone}); err != nil {
@@ -136,6 +141,10 @@ func (r *Renderer) Render(p *site.Page) ([]byte, error) {
 		return PrepareStandalone(p.Content.Body, p.NoIndex, script)
 	}
 	v := view{Site: r.config.Site, Extra: r.config.Extra, Page: p, Canonical: strings.TrimRight(r.config.Site.BaseURL, "/") + p.URL, Assets: r.assets}
+	v.StatsEnabled = r.config.Stats.Enabled
+	if r.config.Content != nil {
+		v.Logo, v.Favicon = r.config.Content.Logo, r.config.Content.Favicon
+	}
 	if p.Content != nil {
 		body := r.prepared[p.ID]
 		v.Body = template.HTML(body.HTML)
