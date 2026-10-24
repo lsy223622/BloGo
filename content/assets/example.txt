@@ -1,0 +1,1 @@
+BloGo 附件示例。此文件的公开地址为 /media/example.txt。

@@ -1,21 +1,18 @@
-site:
-  base_url: https://example.com
-  title: BloGo
-  subtitle: 记录，思考，分享。
-  timezone: Asia/Shanghai
-  language: zh-CN
-paths:
-  source: content
-  templates: templates
-  static: static
-  taxonomies: taxonomies.yaml
-  releases: runtime/releases
-  staging: runtime/staging
-  current: runtime/current
+# 后台运行设置；展示内容在 content/site.yaml。
+server:
+  listen_addr: 127.0.0.1:25646
+  base_url: http://127.0.0.1:25646
+  trusted_proxies:
+    - 127.0.0.1
+    - "::1"
+timezone: Asia/Shanghai
 build:
   scan_interval: 60s
-  summary_max_chars: 160
-  page_size: 10
-  strict_links: false
   keep_releases: 3
-extra: {}
+  strict_links: false
+stats:
+  enabled: true
+  report_interval: 5m
+  details:
+    enabled: false
+    retention: 168h

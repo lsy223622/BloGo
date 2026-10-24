@@ -14,6 +14,10 @@ func LoadContent(source, taxonomyFile string, location *time.Location, preview b
 	if err != nil {
 		return nil, err
 	}
+	return LoadContentWithTaxonomies(source, tax, location, preview)
+}
+
+func LoadContentWithTaxonomies(source string, tax *content.Taxonomies, location *time.Location, preview bool) ([]*content.ContentItem, error) {
 	items, err := content.ReadSources(source)
 	if err != nil {
 		return nil, err

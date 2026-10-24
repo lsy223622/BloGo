@@ -101,7 +101,7 @@ func TestCategoryConfigurationUpdatesListsWithoutRemovingArticles(t *testing.T) 
 		put(t, c.Paths.Source, "posts/a.md", "---\ntitle: Selected article\nstatus: public\npublished: 2026-10-23\ncategories: [missing, tech]\ntags: [known, unknown]\naliases: [/old-a/]\n---\nBody")
 		out := filepath.Join(t.TempDir(), "site")
 		for _, configured := range []bool{true, false, true} {
-			tax := "schema_version: 1\ntags:\n  known: {name: Known}\n"
+			tax := "schema_version: 1\ntitle: Test\ntags:\n  known: {name: Known}\n"
 			if configured {
 				tax += "categories:\n  tech: {name: Tech}\n"
 			}

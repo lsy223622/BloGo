@@ -163,9 +163,15 @@ func ReadSources(source string) ([]*ContentItem, error) {
 			return fmt.Errorf("%s: symbolic link is not allowed", p)
 		}
 		if d.IsDir() {
+			if p == "assets" {
+				return fs.SkipDir
+			}
 			if !strings.Contains(p, "/") && p != "posts" && p != "pages" {
 				return fmt.Errorf("%s: unsupported source directory", p)
 			}
+			return nil
+		}
+		if p == "site.yaml" {
 			return nil
 		}
 		i, err := d.Info()

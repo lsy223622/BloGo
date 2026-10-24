@@ -16,11 +16,11 @@ func fixture(t *testing.T, extra string) string {
 			t.Fatal(err)
 		}
 	}
-	if err := os.WriteFile(filepath.Join(dir, "taxonomies.yaml"), []byte("schema_version: 1\n"), 0600); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "content/site.yaml"), []byte("schema_version: 1\ntitle: 测试\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	file := filepath.Join(dir, "config.yaml")
-	data := "site:\n  base_url: https://example.com\n  title: 测试\npaths:\n  source: content\n  templates: templates\n  static: static\n" + extra
+	data := "server:\n  base_url: https://example.com\n" + extra
 	if err := os.WriteFile(file, []byte(data), 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -28,7 +28,7 @@ func fixture(t *testing.T, extra string) string {
 }
 
 func TestLoadDefaultsAndCommandBoundaries(t *testing.T) {
-	file := fixture(t, "extra:\n  menu: [关于, 标签]\n")
+	file := fixture(t, "")
 	c, err := Load(file)
 	if err != nil {
 		t.Fatal(err)
@@ -36,7 +36,7 @@ func TestLoadDefaultsAndCommandBoundaries(t *testing.T) {
 	if c.Site.Timezone != "Asia/Shanghai" || c.Site.Language != "zh-CN" || c.Build.PageSize != 10 || c.Build.SummaryMaxChars != 160 || c.Build.KeepReleases != 3 || time.Duration(c.Build.ScanInterval) != time.Minute {
 		t.Fatalf("defaults: %+v", c)
 	}
-	if !filepath.IsAbs(c.Paths.Source) || c.Paths.Source != filepath.Join(filepath.Dir(file), "content") || c.Extra["menu"] == nil {
+	if !filepath.IsAbs(c.Paths.Source) || c.Paths.Source != filepath.Join(filepath.Dir(file), "content") {
 		t.Fatalf("paths/extra: %+v", c)
 	}
 	if err := c.Validate("build", filepath.Join(filepath.Dir(file), "out")); err != nil {
@@ -61,19 +61,14 @@ func TestLoadDefaultsAndCommandBoundaries(t *testing.T) {
 	if err := c.Validate("build", ordinaryFile); err == nil {
 		t.Fatal("accepted unrelated ordinary file as output directory")
 	}
-	if err := c.Validate("publish", ""); err == nil {
-		t.Fatal("accepted absent release paths")
-	}
+
 }
 
 func TestSitePresentationSettings(t *testing.T) {
-	file := fixture(t, "build:\n  page_size: 7\n")
-	data, err := os.ReadFile(file)
+	file := fixture(t, "")
+	settings := filepath.Join(filepath.Dir(file), "content/site.yaml")
+	err := os.WriteFile(settings, []byte("schema_version: 1\ntitle: 测试\nsubtitle: 记录与分享\npage_size: 7\n"), 0600)
 	if err != nil {
-		t.Fatal(err)
-	}
-	data = []byte(strings.Replace(string(data), "title: 测试", "title: 测试\n  subtitle: 记录与分享", 1))
-	if err = os.WriteFile(file, data, 0600); err != nil {
 		t.Fatal(err)
 	}
 	c, err := Load(file)
@@ -128,7 +123,7 @@ func TestManifestCannotBeOverwritten(t *testing.T) {
 		t.Fatal(err)
 	}
 	file := filepath.Join(dir, "config.yaml")
-	if err := os.WriteFile(file, []byte("site:\n  base_url: https://example.com\n"), 0600); err != nil {
+	if err := os.WriteFile(file, []byte("server:\n  base_url: https://example.com\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	for _, tc := range []struct{ command, field string }{{"stats", "database"}, {"report", "public"}, {"report", "private"}} {
@@ -163,21 +158,21 @@ func TestManifestCannotBeOverwritten(t *testing.T) {
 
 func TestInvalidConfiguration(t *testing.T) {
 	for _, tc := range []struct{ name, data, field string }{
-		{"unknown", "site:\n  titel: bad\n", "titel"},
-		{"duplicate", "site:\n  title: A\n  title: B\n", "title"},
-		{"coerced string", "site:\n  title: 12\n", "title"},
-		{"null", "site: null\n", "site"},
+		{"unknown", "server:\n  bas_url: bad\n", "bas_url"},
+		{"duplicate", "server:\n  base_url: https://a.example\n  base_url: https://b.example\n", "base_url"},
+		{"coerced string", "server:\n  base_url: 12\n", "base_url"},
+		{"null", "server: null\n", "server"},
 		{"extra type", "extra: []\n", "extra"},
-		{"timezone", "site:\n  timezone: Mars/Olympus\n", "timezone"},
-		{"subpath", "site:\n  base_url: https://example.com/blog\n", "base_url"},
-		{"credentials", "site:\n  base_url: https://u:p@example.com\n", "base_url"},
-		{"query", "site:\n  base_url: https://example.com?\n", "base_url"},
-		{"fragment", "site:\n  base_url: https://example.com/#\n", "base_url"},
-		{"bad port", "site:\n  base_url: https://example.com:99999\n", "base_url"},
-		{"listener", "stats:\n  listen_addr: localhost:8787\n", "listen_addr"},
-		{"nonloopback", "stats:\n  listen_addr: 0.0.0.0:8787\n", "listen_addr"},
-		{"negative", "build:\n  page_size: -1\n", "page_size"},
-		{"zero", "stats:\n  report_interval: 0s\n", "report_interval"},
+		{"timezone", "timezone: Mars/Olympus\n", "timezone"},
+		{"subpath", "server:\n  base_url: https://example.com/blog\n", "base_url"},
+		{"credentials", "server:\n  base_url: https://u:p@example.com\n", "base_url"},
+		{"query", "server:\n  base_url: https://example.com?\n", "base_url"},
+		{"fragment", "server:\n  base_url: https://example.com/#\n", "base_url"},
+		{"bad port", "server:\n  base_url: https://example.com:99999\n", "base_url"},
+		{"listener", "server:\n  listen_addr: localhost:8787\n", "listen_addr"},
+		{"nonloopback", "server:\n  listen_addr: 0.0.0.0:8787\n", "listen_addr"},
+		{"negative", "build:\n  keep_releases: -1\n", "keep_releases"},
+		{"zero", "stats:\n  report_interval: 0s\n", "intervals"},
 		{"multiple docs", "site: {}\n---\nsite: {}\n", "document"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -201,7 +196,7 @@ func TestStatsDoesNotReadSources(t *testing.T) {
 		}
 	}
 	file := filepath.Join(dir, "config.yaml")
-	data := "site:\n  base_url: https://example.com\npaths:\n  source: missing\n  templates: missing-templates\nstats:\n  manifest_path: manifest.json\n  database_path: stats.db\n  visitor_key_path: key\n  public_output: public/stats.json\n  private_output: private/report.html\n"
+	data := "server:\n  base_url: https://example.com\npaths:\n  content: missing\n  templates: missing-templates\n"
 	if err := os.WriteFile(file, []byte(data), 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -209,6 +204,11 @@ func TestStatsDoesNotReadSources(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	c.Stats.ManifestPath = filepath.Join(dir, "manifest.json")
+	c.Stats.DatabasePath = filepath.Join(dir, "stats.db")
+	c.Stats.VisitorKeyPath = filepath.Join(dir, "key")
+	c.Stats.PublicOutput = filepath.Join(dir, "public/stats.json")
+	c.Stats.PrivateOutput = filepath.Join(dir, "private/report.html")
 	for _, command := range []string{"stats", "report"} {
 		if err := c.Validate(command, ""); err != nil {
 			t.Fatalf("%s: %v", command, err)
@@ -217,22 +217,32 @@ func TestStatsDoesNotReadSources(t *testing.T) {
 }
 
 func TestInputOutputAndPrivatePathSeparation(t *testing.T) {
-	for _, tc := range []struct {
-		name, extra string
-		output      func(*Config) string
+	for _, test := range []struct {
+		name   string
+		change func(*Config)
+		output func(*Config) string
 	}{
-		{"templates output", "", func(c *Config) string { return c.Paths.Templates }},
-		{"output ancestor", "", func(c *Config) string { return filepath.Dir(c.Paths.Source) }},
-		{"private in public", "stats:\n  private_output: out/public/report.html\n", func(c *Config) string { return filepath.Join(filepath.Dir(c.Paths.Source), "out") }},
-		{"key in static", "stats:\n  visitor_key_path: static/key\n", func(c *Config) string { return filepath.Join(filepath.Dir(c.Paths.Source), "out") }},
-		{"database in public stats", "stats:\n  database_path: stats-public/stats.db\n  public_output: stats-public/stats.json\n", func(c *Config) string { return filepath.Join(filepath.Dir(c.Paths.Source), "out") }},
+		{"templates output", nil, func(c *Config) string { return c.Paths.Templates }},
+		{"output ancestor", nil, func(c *Config) string { return filepath.Dir(c.Paths.Source) }},
+		{"private in public", func(c *Config) {
+			c.Stats.PrivateOutput = filepath.Join(filepath.Dir(c.Paths.Source), "out/public/report.html")
+		}, nil},
+		{"key in static", func(c *Config) { c.Stats.VisitorKeyPath = filepath.Join(c.Paths.Static, "key") }, nil},
+		{"database in public stats", func(c *Config) { c.Stats.DatabasePath = filepath.Join(filepath.Dir(c.Stats.PublicOutput), "stats.db") }, nil},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
-			c, err := Load(fixture(t, tc.extra))
-			if err == nil {
-				err = c.Validate("build", tc.output(c))
+		t.Run(test.name, func(t *testing.T) {
+			c, err := Load(fixture(t, ""))
+			if err != nil {
+				t.Fatal(err)
 			}
-			if err == nil {
+			if test.change != nil {
+				test.change(c)
+			}
+			output := filepath.Join(filepath.Dir(c.Paths.Source), "out")
+			if test.output != nil {
+				output = test.output(c)
+			}
+			if err = c.Validate("build", output); err == nil {
 				t.Fatal("accepted dangerous paths")
 			}
 		})

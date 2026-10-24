@@ -1,0 +1,18 @@
+schema_version: 1
+title: BloGo
+subtitle: 记录，思考，分享。
+language: zh-CN
+page_size: 10
+summary_max_chars: 160
+logo: /images/logo.svg
+favicon: /images/favicon.svg
+profile: []
+categories:
+  tech:
+    name: 技术 / Tech 🛠️
+  hardware:
+    name: 硬件 & PCB
+    parent: tech
+tags:
+  esp32:
+    name: ESP32 ⚡

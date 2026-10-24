@@ -70,10 +70,25 @@ func readTree(root string, allowed func(string) bool) (map[string][]byte, error)
 	return files, err
 }
 
-func CopyAssets(source, public string, pages []*site.Page) (map[string]string, error) {
+func CopyAssets(source, public string, pages []*site.Page, media ...string) (map[string]string, error) {
 	files, err := readTree(source, staticAllowed)
 	if err != nil {
 		return nil, err
+	}
+	if len(media) > 0 {
+		input, err := readTree(media[0], staticAllowed)
+		if err != nil {
+			return nil, err
+		}
+		for name, data := range input {
+			target := "media/" + name
+			for existing := range files {
+				if existing == target || strings.HasPrefix(existing, target+"/") || strings.HasPrefix(target, existing+"/") {
+					return nil, fmt.Errorf("content asset %s conflicts with static %s", name, existing)
+				}
+			}
+			files[target] = data
+		}
 	}
 	for _, page := range pages {
 		if page.StatsEnabled {

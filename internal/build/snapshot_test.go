@@ -12,7 +12,7 @@ import (
 func buildFixture(t *testing.T) *config.Config {
 	t.Helper()
 	root := t.TempDir()
-	put(t, root, "config.yaml", "site:\n  title: Test\n  base_url: https://example.com\npaths:\n  source: content\n  templates: templates\n  static: static\n  releases: runtime/releases\n  staging: runtime/staging\n  current: runtime/current\n")
+	put(t, root, "config.yaml", "server:\n  base_url: https://example.com\n")
 	put(t, root, "content/posts/a.md", "---\ntitle: A\nstatus: public\npublished: 2026-10-23\n---\nBody.")
 	put(t, root, "templates/page.html", `{{define "page"}}<!doctype html><html><head><title>{{.Page.Title}}</title></head><body>{{.Body}}{{range .Page.Items}}<a href="{{.URL}}">{{.Meta.Title}}</a>{{end}}</body></html>{{end}}`)
 	put(t, root, "static/assets/theme.css", "body { color: black; }")
@@ -21,7 +21,7 @@ func buildFixture(t *testing.T) *config.Config {
 		t.Fatal(err)
 	}
 	put(t, root, "static/assets/stats.js", string(collector))
-	put(t, root, "taxonomies.yaml", "schema_version: 1\n")
+	put(t, root, "content/site.yaml", "schema_version: 1\ntitle: Test\n")
 	c, err := config.Load(filepath.Join(root, "config.yaml"))
 	if err != nil {
 		t.Fatal(err)
@@ -96,9 +96,49 @@ func TestOutputDoesNotParticipateInInputs(t *testing.T) {
 	}
 }
 
+func TestContentSettingsAndAssetsSnapshot(t *testing.T) {
+	c := buildFixture(t)
+	first, err := Scan(c, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	put(t, c.Paths.Source, "site.yaml", "schema_version: 1\ntitle: Changed\n")
+	changed, err := Scan(c, false)
+	if err != nil || changed == first {
+		t.Fatal("settings omitted from fingerprint", err)
+	}
+	put(t, c.Paths.Source, "assets/photo.png", "image bytes")
+	image, err := Scan(c, false)
+	if err != nil || image == changed {
+		t.Fatal("attachment omitted from fingerprint", err)
+	}
+	put(t, c.Paths.Source, "posts/a.md", "---\ntitle: A\nstatus: public\npublished: 2026-10-23\n---\n![Photo](/media/photo.png)")
+	built, err := Build(c, filepath.Join(t.TempDir(), "site"), false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(filepath.Join(built.Output, "public/media/photo.png"))
+	if err != nil || string(data) != "image bytes" {
+		t.Fatal("attachment mapping", err)
+	}
+	put(t, c.Paths.Static, "media/photo.png", "conflict")
+	if _, err = Build(c, filepath.Join(t.TempDir(), "conflict"), false); err == nil {
+		t.Fatal("static/media collision accepted")
+	}
+	if err = os.Remove(filepath.Join(c.Paths.Static, "media/photo.png")); err != nil {
+		t.Fatal(err)
+	}
+	if err = os.Remove(filepath.Join(c.Paths.Assets, "photo.png")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = Build(c, filepath.Join(t.TempDir(), "missing"), false); err == nil {
+		t.Fatal("missing attachment accepted")
+	}
+}
+
 func TestConfigChangesRequireReload(t *testing.T) {
 	c := buildFixture(t)
-	put(t, filepath.Dir(c.FilePath()), "config.yaml", "site: {title: Changed, base_url: https://example.com}\n")
+	put(t, filepath.Dir(c.FilePath()), "config.yaml", "server: {base_url: https://changed.example}\n")
 	if _, err := Scan(c, false); err == nil {
 		t.Fatal("scan used stale parsed configuration")
 	}

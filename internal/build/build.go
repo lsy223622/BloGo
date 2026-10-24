@@ -72,11 +72,8 @@ func buildSite(c *config.Config, output string, preview bool, fingerprint string
 	if err != nil {
 		return nil, invalid(err)
 	}
-	tax, err := content.ReadTaxonomies(model.Paths.Taxonomies)
-	if err != nil {
-		return nil, invalid(err)
-	}
-	items, err := site.LoadContent(model.Paths.Source, model.Paths.Taxonomies, loc, preview)
+	tax := model.Content.Taxonomies()
+	items, err := site.LoadContentWithTaxonomies(model.Paths.Source, tax, loc, preview)
 	if err != nil {
 		return nil, invalid(err)
 	}
@@ -90,7 +87,7 @@ func buildSite(c *config.Config, output string, preview bool, fingerprint string
 	}
 	site.ApplyNavigation(pages, index)
 	public := filepath.Join(stage, "public")
-	assets, err := CopyAssets(model.Paths.Static, public, pages)
+	assets, err := CopyAssets(model.Paths.Static, public, pages, model.Paths.Assets)
 	if err != nil {
 		return nil, invalid(err)
 	}

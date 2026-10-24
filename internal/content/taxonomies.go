@@ -8,6 +8,7 @@ import (
 	"unicode"
 
 	"github.com/lsy223622/BloGo/internal/yamlutil"
+	"go.yaml.in/yaml/v3"
 )
 
 type Taxonomies struct {
@@ -44,11 +45,15 @@ func ReadTaxonomies(file string) (*Taxonomies, error) {
 }
 
 func ParseTaxonomies(file string, data []byte) (*Taxonomies, error) {
-	var tax Taxonomies
-	n, err := yamlutil.Decode(data, &tax)
+	settings, err := ParseSettings(file, data)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", file, err)
+		return nil, err
 	}
+	return settings.Taxonomies(), nil
+}
+
+func validateTaxonomies(file string, value *Taxonomies, n *yaml.Node) (*Taxonomies, error) {
+	tax := *value
 	fail := func(section, id, field, message string) (*Taxonomies, error) {
 		node := yamlutil.Field(n, section)
 		if id != "" {

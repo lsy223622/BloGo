@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/netip"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -32,17 +33,26 @@ func (d *Duration) UnmarshalYAML(n *yaml.Node) error {
 }
 
 type Config struct {
-	Site   Site           `yaml:"site"`
-	Paths  Paths          `yaml:"paths"`
-	Build  Build          `yaml:"build"`
-	Stats  Stats          `yaml:"stats"`
-	Extra  map[string]any `yaml:"extra"`
-	file   string
-	digest [32]byte
+	Site     Site             `yaml:"-"`
+	Server   Server           `yaml:"server"`
+	Timezone string           `yaml:"timezone"`
+	Content  *ContentSettings `yaml:"-"`
+	Paths    Paths            `yaml:"paths"`
+	Build    Build            `yaml:"build"`
+	Stats    Stats            `yaml:"stats"`
+	Extra    map[string]any   `yaml:"-"`
+	file     string
+	digest   [32]byte
 }
 
 func (c *Config) FilePath() string     { return c.file }
 func (c *Config) FileDigest() [32]byte { return c.digest }
+
+type Server struct {
+	ListenAddr     string   `yaml:"listen_addr"`
+	BaseURL        string   `yaml:"base_url"`
+	TrustedProxies []string `yaml:"trusted_proxies"`
+}
 
 type Site struct {
 	BaseURL  string `yaml:"base_url"`
@@ -52,28 +62,36 @@ type Site struct {
 	Language string `yaml:"language"`
 }
 type Paths struct {
-	Source     string `yaml:"source"`
+	Source     string `yaml:"content"`
+	Data       string `yaml:"data"`
+	Assets     string `yaml:"-"`
 	Templates  string `yaml:"templates"`
 	Static     string `yaml:"static"`
-	Taxonomies string `yaml:"taxonomies"`
-	Releases   string `yaml:"releases"`
-	Staging    string `yaml:"staging"`
-	Current    string `yaml:"current"`
+	Taxonomies string `yaml:"-"`
+	Releases   string `yaml:"-"`
+	Staging    string `yaml:"-"`
+	Current    string `yaml:"-"`
 }
 type Build struct {
 	ScanInterval    Duration `yaml:"scan_interval"`
-	SummaryMaxChars int      `yaml:"summary_max_chars"`
-	PageSize        int      `yaml:"page_size"`
+	SummaryMaxChars int      `yaml:"-"`
+	PageSize        int      `yaml:"-"`
 	StrictLinks     bool     `yaml:"strict_links"`
 	KeepReleases    int      `yaml:"keep_releases"`
 }
+type Details struct {
+	Enabled   bool     `yaml:"enabled"`
+	Retention Duration `yaml:"retention"`
+}
 type Stats struct {
-	ListenAddr       string   `yaml:"listen_addr"`
-	ManifestPath     string   `yaml:"manifest_path"`
-	DatabasePath     string   `yaml:"database_path"`
-	VisitorKeyPath   string   `yaml:"visitor_key_path"`
-	PublicOutput     string   `yaml:"public_output"`
-	PrivateOutput    string   `yaml:"private_output"`
+	Enabled          bool     `yaml:"enabled"`
+	Details          Details  `yaml:"details"`
+	ListenAddr       string   `yaml:"-"`
+	ManifestPath     string   `yaml:"-"`
+	DatabasePath     string   `yaml:"-"`
+	VisitorKeyPath   string   `yaml:"-"`
+	PublicOutput     string   `yaml:"-"`
+	PrivateOutput    string   `yaml:"-"`
 	EventRetention   Duration `yaml:"event_retention"`
 	VisitorRetention Duration `yaml:"visitor_retention"`
 	ReportInterval   Duration `yaml:"report_interval"`
@@ -88,50 +106,69 @@ func Load(file string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	c := &Config{Site: Site{Timezone: "Asia/Shanghai", Language: "zh-CN"}, Paths: Paths{Taxonomies: "taxonomies.yaml"}, Build: Build{ScanInterval: Duration(time.Minute), SummaryMaxChars: 160, PageSize: 10, KeepReleases: 3}, Stats: Stats{ListenAddr: "127.0.0.1:8787", EventRetention: Duration(72 * time.Hour), VisitorRetention: Duration(7 * 24 * time.Hour), ReportInterval: Duration(5 * time.Minute)}, file: file}
-	n, err := yamlutil.Decode(data, c)
-	if err != nil {
+	c := &Config{Server: Server{ListenAddr: "127.0.0.1:25646", BaseURL: "http://127.0.0.1:25646", TrustedProxies: []string{"127.0.0.1", "::1"}}, Timezone: "Asia/Shanghai", Paths: Paths{Source: "content", Templates: "templates", Static: "static", Data: "data"}, Build: Build{ScanInterval: Duration(time.Minute), KeepReleases: 3}, Stats: Stats{Enabled: true, Details: Details{Retention: Duration(168 * time.Hour)}, EventRetention: Duration(72 * time.Hour), VisitorRetention: Duration(168 * time.Hour), ReportInterval: Duration(5 * time.Minute)}, file: file}
+	if _, err = yamlutil.Decode(data, c); err != nil {
 		return nil, fmt.Errorf("%s: %w", file, err)
 	}
 	c.digest = sha256.Sum256(data)
-	fail := func(section, field, msg string) (*Config, error) {
-		return nil, fmt.Errorf("%s: %w", file, yamlutil.Error(yamlutil.Field(yamlutil.Field(n, section), field), section+"."+field, msg))
+	if _, err = time.LoadLocation(c.Timezone); err != nil || c.Timezone == "" || c.Timezone == "Local" {
+		return nil, fmt.Errorf("%s: timezone: expected IANA timezone", file)
 	}
-	if _, err := time.LoadLocation(c.Site.Timezone); err != nil || c.Site.Timezone == "" || c.Site.Timezone == "Local" {
-		return fail("site", "timezone", "expected IANA timezone")
+	if err = origin(c.Server.BaseURL); err != nil {
+		return nil, fmt.Errorf("%s: server.base_url: %w", file, err)
 	}
-	if c.Site.BaseURL != "" {
-		if err := origin(c.Site.BaseURL); err != nil {
-			return fail("site", "base_url", err.Error())
-		}
+	if err = Listener(c.Server.ListenAddr); err != nil {
+		return nil, fmt.Errorf("%s: server.listen_addr: %w", file, err)
 	}
-	if err := Listener(c.Stats.ListenAddr); err != nil {
-		return fail("stats", "listen_addr", err.Error())
-	}
-	for _, v := range []struct {
-		name  string
-		value int
-	}{{"summary_max_chars", c.Build.SummaryMaxChars}, {"page_size", c.Build.PageSize}, {"keep_releases", c.Build.KeepReleases}} {
-		if v.value <= 0 {
-			return fail("build", v.name, "must be positive")
-		}
-	}
-	for _, v := range []struct {
-		section, name string
-		value         Duration
-	}{{"build", "scan_interval", c.Build.ScanInterval}, {"stats", "event_retention", c.Stats.EventRetention}, {"stats", "visitor_retention", c.Stats.VisitorRetention}, {"stats", "report_interval", c.Stats.ReportInterval}} {
-		if v.value <= 0 {
-			return fail(v.section, v.name, "must be positive")
-		}
-	}
-	for _, p := range []*string{&c.Paths.Source, &c.Paths.Templates, &c.Paths.Static, &c.Paths.Taxonomies, &c.Paths.Releases, &c.Paths.Staging, &c.Paths.Current, &c.Stats.ManifestPath, &c.Stats.DatabasePath, &c.Stats.VisitorKeyPath, &c.Stats.PublicOutput, &c.Stats.PrivateOutput} {
-		if *p != "" {
-			if !filepath.IsAbs(*p) {
-				*p = filepath.Join(filepath.Dir(file), *p)
+	for _, proxy := range c.Server.TrustedProxies {
+		if _, e := netip.ParsePrefix(proxy); e != nil {
+			if _, e = netip.ParseAddr(proxy); e != nil {
+				return nil, fmt.Errorf("%s: trusted_proxies: invalid IP or prefix", file)
 			}
-			*p = filepath.Clean(*p)
 		}
 	}
+	if c.Build.KeepReleases < 1 {
+		return nil, fmt.Errorf("%s: keep_releases must be positive", file)
+	}
+	for _, interval := range []Duration{c.Build.ScanInterval, c.Stats.EventRetention, c.Stats.VisitorRetention, c.Stats.ReportInterval, c.Stats.Details.Retention} {
+		if interval <= 0 {
+			return nil, fmt.Errorf("%s: intervals and retention must be positive", file)
+		}
+	}
+	for _, path := range []*string{&c.Paths.Source, &c.Paths.Templates, &c.Paths.Static, &c.Paths.Data} {
+		if *path == "" {
+			return nil, fmt.Errorf("%s: paths must not be empty", file)
+		}
+		if !filepath.IsAbs(*path) {
+			*path = filepath.Join(filepath.Dir(file), *path)
+		}
+		*path = filepath.Clean(*path)
+	}
+	for _, input := range []string{c.Paths.Source, c.Paths.Templates, c.Paths.Static, file} {
+		if contains(c.Paths.Data, input) || contains(input, c.Paths.Data) {
+			return nil, fmt.Errorf("%s: data overlaps input", file)
+		}
+	}
+	c.Paths.Taxonomies = filepath.Join(c.Paths.Source, "site.yaml")
+	c.Paths.Assets = filepath.Join(c.Paths.Source, "assets")
+	c.Paths.Releases = filepath.Join(c.Paths.Data, "releases")
+	c.Paths.Staging = filepath.Join(c.Paths.Data, "staging")
+	c.Paths.Current = filepath.Join(c.Paths.Data, "current")
+	c.Stats.ManifestPath = filepath.Join(c.Paths.Current, "meta/manifest.json")
+	c.Stats.DatabasePath = filepath.Join(c.Paths.Data, "statistics/stats.db")
+	c.Stats.VisitorKeyPath = filepath.Join(c.Paths.Data, "statistics/visitor.key")
+	c.Stats.PublicOutput = filepath.Join(c.Paths.Data, "public/stats.json")
+	c.Stats.PrivateOutput = filepath.Join(c.Paths.Data, "private/report.html")
+	c.Stats.ListenAddr = c.Server.ListenAddr
+	c.Site.BaseURL = c.Server.BaseURL
+	c.Site.Timezone = c.Timezone
+	settings, e := LoadContentSettings(c.Paths.Taxonomies)
+	if e == nil {
+		c.ApplyContentSettings(settings)
+	} else if !os.IsNotExist(e) {
+		return nil, e
+	}
+
 	return c, nil
 }
 
@@ -178,6 +215,24 @@ func (c *Config) Validate(command, output string) error {
 	}
 	switch command {
 	case "build", "dev", "publish", "watch":
+		if c.Paths.Data != "" {
+			data, err := resolved(c.Paths.Data)
+			if err != nil {
+				return fail("paths.data", err.Error())
+			}
+			for _, input := range []string{c.Paths.Source, c.Paths.Templates, c.Paths.Static, c.file} {
+				if input == "" {
+					continue
+				}
+				path, err := resolved(input)
+				if err != nil {
+					return err
+				}
+				if contains(data, path) || contains(path, data) {
+					return fail("paths.data", "overlaps input")
+				}
+			}
+		}
 		if strings.TrimSpace(c.Site.Title) == "" {
 			return fail("site.title", "required")
 		}

@@ -50,7 +50,7 @@ func collectInputs(c *config.Config) (map[string][]byte, error) {
 		allowed     func(string) bool
 	}{
 		{"content", c.Paths.Source, func(file string) bool {
-			return (strings.HasPrefix(file, "posts/") && path.Ext(file) == ".md") || (strings.HasPrefix(file, "pages/") && (path.Ext(file) == ".md" || path.Ext(file) == ".html"))
+			return file == "site.yaml" || (strings.HasPrefix(file, "assets/") && staticAllowed(file)) || (strings.HasPrefix(file, "posts/") && path.Ext(file) == ".md") || (strings.HasPrefix(file, "pages/") && (path.Ext(file) == ".md" || path.Ext(file) == ".html"))
 		}},
 		{"templates", c.Paths.Templates, func(file string) bool { return path.Ext(file) == ".html" || path.Ext(file) == ".tmpl" }},
 		{"static", c.Paths.Static, staticAllowed},
@@ -63,7 +63,7 @@ func collectInputs(c *config.Config) (map[string][]byte, error) {
 			files[group.label+"/"+name] = data
 		}
 	}
-	for _, entry := range []struct{ label, file string }{{"config.yaml", c.FilePath()}, {"taxonomies.yaml", c.Paths.Taxonomies}} {
+	for _, entry := range []struct{ label, file string }{{"config.yaml", c.FilePath()}} {
 		info, err := os.Lstat(entry.file)
 		if err != nil {
 			return nil, err
@@ -152,7 +152,16 @@ func CreateSnapshot(c *config.Config, parent, expected string, preview bool) (*S
 	cloned.Paths.Source = filepath.Join(root, "content")
 	cloned.Paths.Templates = filepath.Join(root, "templates")
 	cloned.Paths.Static = filepath.Join(root, "static")
-	cloned.Paths.Taxonomies = filepath.Join(root, "taxonomies.yaml")
+	cloned.Paths.Taxonomies = filepath.Join(root, "content/site.yaml")
+	cloned.Paths.Assets = filepath.Join(root, "content/assets")
+	if err = os.MkdirAll(cloned.Paths.Assets, 0755); err != nil {
+		return nil, err
+	}
+	settings, err := config.LoadContentSettings(cloned.Paths.Taxonomies)
+	if err != nil {
+		return nil, err
+	}
+	cloned.ApplyContentSettings(settings)
 	success = true
 	return &Snapshot{Root: root, Fingerprint: copied, Config: &cloned}, nil
 }

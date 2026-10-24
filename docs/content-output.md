@@ -15,3 +15,5 @@
 上一篇/下一篇按 Public 文章的发布时间建立，与更新时间列表分离。RSS 的 GUID 使用稳定内容 ID；RSS 和 Sitemap 排除 Unlisted/Draft，Sitemap 另排除 404。生成链接均使用规范 URL。
 
 重定向文件包含 Nginx `map` 的字面量条目，覆盖无尾斜杠、`index.html` 和历史 aliases；目标只能为内容的当前规范 URL。由部署示例统一返回 301 并保留 query，生成器不修改或重载 Nginx。
+
+用户附件位于 `content/assets/`，映射到 `/media/`；展示信息、分类与标签统一定义于 `content/site.yaml`。页面扫描只读取 posts/pages，附件与站点设置分别校验并纳入一致的构建快照。
