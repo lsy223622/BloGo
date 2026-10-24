@@ -52,3 +52,5 @@ sqlite3 /private-backup/stats-20261023.db 'PRAGMA integrity_check;'
 恢复时由管理员停止 collector 与报告 timer，确认没有打开数据库的进程，保留当前数据库和密钥作为回退副本。把备份恢复到配置的 database_path，恢复对应 visitor.key；主数据库 owner/group 为 blog-stats:blog-reports、0660，密钥 owner 为 blog-stats、0600，database 目录为 2770。只有确认所有连接已关闭后才清理旧 WAL/SHM，避免把旧辅助文件与恢复数据库混用。启动 collector，运行一次报告，核对累计数据、生成版本与新事件，再恢复 timer。
 
 自动测试在 collector 活动时执行相同的 VACUUM INTO SQL，恢复数据库和密钥后验证 integrity_check、旧事件去重、同日 UV 延续、新 PV 与报告刷新。部署栈另以不同非 root 账户演练停机、重启和恢复。
+
+统一 HTTP 入口仅对 server.trusted_proxies 中明确配置的直接对端读取 X-Forwarded-For；从右向左跳过可信代理，使用最近的不可信地址。非法的可信链回退连接对端，陌生来源的转发头不影响限流。解析结果由请求上下文传递，不接受事件 JSON 自报 IP。来源桶最多 4096 个，空闲 10 分钟回收；同一来源突发 40 次、每秒补充 20 次，另保留全局请求限制。

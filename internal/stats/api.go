@@ -18,6 +18,7 @@ import (
 
 	"github.com/lsy223622/BloGo/internal/config"
 	"github.com/lsy223622/BloGo/internal/content"
+	"github.com/lsy223622/BloGo/internal/requestmeta"
 	"github.com/lsy223622/BloGo/internal/site"
 )
 
@@ -35,6 +36,7 @@ type Handler struct {
 	origin, host string
 	now          func() time.Time
 	limit        *rateLimit
+	sources      sourceLimits
 }
 type rateLimit struct {
 	mu     sync.Mutex
@@ -152,7 +154,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	now := h.now()
-	if !h.limit.allow(now) {
+	ip := requestmeta.ClientIP(r)
+	if !ip.IsValid() {
+		http.Error(w, "invalid peer", 400)
+		return
+	}
+	if !h.limit.allow(now) || !h.sources.allow(ip.String(), now) {
 		http.Error(w, "rate limit exceeded", 429)
 		return
 	}
