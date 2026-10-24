@@ -33,6 +33,7 @@ go run ./cmd/blog dev --config config.yaml --output output/dev --listen 127.0.0.
 - [配置与命令](docs/configuration.md)
 - [内容模型与输出](docs/content-output.md)
 - [Markdown 支持](docs/markdown-support.md)
+- [文章格式与完整语法示例](docs/content-example.md)
 - [Linux 部署与回滚](docs/deployment.md)
 - [统计、指标与备份恢复](docs/statistics.md)
 - [安全与权限验收](docs/security-validation.md)
