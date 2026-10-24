@@ -20,7 +20,7 @@
         const path = new URL(url,location.href).pathname;
         return !!el?.closest('[data-no-swup]') || /\.[a-z0-9]+$/i.test(path) && !/\.html?$/i.test(path);
       },
-      plugins:[new window.SwupScrollPlugin({animateScroll:{betweenPages:false,samePageWithHash:true,samePage:false}})]
+      plugins:[new window.SwupScrollPlugin({animateScroll:{betweenPages:false,samePageWithHash:true,samePage:true}})]
     });
   } catch (_) { return; }
 

@@ -37,13 +37,13 @@ extra:
 
 渲染回归复用仓库中的 Public、无日期独立页面和 Unlisted Standalone 样例。正文、标题转义、HTML 片段、noindex 和 tokenizer 插入位置在 `internal/render` 测试。
 
-主题资源位于 `static/assets/`，使用系统字体链、CSS 变量、回环本地预览与原生 `<dialog>` 灯箱。深浅色选择可保存到本地存储；存储不可用时仍可切换。代码使用 Chroma 的 GitHub / GitHub Dark 配色，公式由 `static/vendor/katex-0.19.0/` 的自托管 KaTeX 增强。KaTeX 的 MIT 许可保留在该目录的 LICENSE，JS 的 SHA-256 为 `103a53763cc033bba8d175bf3f0ba597c3505c9b6747dd3f2c7bc2a6bfcc8ae7`。
+主题资源位于 `static/assets/`，使用系统字体链、CSS 变量、回环本地预览与原生 `<dialog>` 灯箱。正文图片以 240ms 缓动在原位置和居中大图之间缩放，网页遮罩同步渐暗、渐亮；关闭按钮、遮罩和 Escape 使用同一关闭过程，减少动态效果时直接切换。深浅色选择可保存到本地存储；存储不可用时仍可切换。代码使用 Chroma 的 GitHub / GitHub Dark 配色，公式由 `static/vendor/katex-0.19.0/` 的自托管 KaTeX 增强。KaTeX 的 MIT 许可保留在该目录的 LICENSE，JS 的 SHA-256 为 `103a53763cc033bba8d175bf3f0ba597c3505c9b6747dd3f2c7bc2a6bfcc8ae7`。
 
 主题按钮依次选择系统、浅色、深色；系统模式会跟随操作系统变化。系统图标沿左下至右上的分隔线组合太阳左上半与月亮右下半。按钮支持悬停和键盘焦点提示；触屏在点击后淡入提示，保持约 1.2 秒后淡出，再次点击重新计时，复制结果按同样规则展示。桌面导航、站点标题与信息栏保持位置，阅读区独立滚动；手机导航和同一行的站点名称、副标题固定在内容区上方，正文与信息栏一起滚动。纵向滚动条隐藏，鼠标滚轮、触摸和键盘滚动保持可用。
 
 Mermaid 的浏览器包和 MIT 许可位于 `static/vendor/mermaid-12.2.0/`，只在包含 Mermaid 围栏的页面加载；使用官方 npm 包中的独立构建，无 CDN 运行时依赖。
 
-站内导航使用自托管 Swup 4.10.0 与 Scroll Plugin 4.0.0，只替换 `#main`；导航、站点标题区、信息栏与主题控件保留原 DOM。正文淡入淡出为 140ms，减少动态效果时直接替换。地址、标题、canonical、Open Graph、description、robots 与当前栏目同步更新，滚动插件保存桌面阅读区和手机内容区的历史位置。完整 HTML 仍是每个 URL 的直接访问与刷新入口。
+站内导航使用自托管 Swup 4.10.0 与 Scroll Plugin 4.0.0，只替换 `#main`；导航、站点标题区、信息栏与主题控件保留原 DOM。正文淡入淡出为 140ms，减少动态效果时直接替换。地址、标题、canonical、Open Graph、description、robots 与当前栏目同步更新，滚动插件保存桌面阅读区和手机内容区的历史位置。点击当前页导航、logo 或站名时，对相应滚动容器执行平滑回顶，减少动态效果时直接定位。完整 HTML 仍是每个 URL 的直接访问与刷新入口。
 
 `theme.js` 的页面增强通过 `BloGoPage.init/destroy` 管理代码块、公式、图表、灯箱与阅读量；相同正文节点只初始化一次，离开时收起提示和灯箱。Mermaid 加载失败时保留源码，其他增强独立工作。`navigation.js` 在替换前取消尚未可见页面的统计，替换后按新页面的统计开关发送一次浏览事件；只提取上一页 URL 的主机名。每次访问带独立标记，延迟到达的旧统计脚本不计入新访问。热门列表保留在信息栏中，不重复添加。
 

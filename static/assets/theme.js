@@ -164,17 +164,42 @@
       image.tabIndex = 0;
       image.setAttribute("role", "button");
       image.setAttribute("aria-label", "放大图片：" + image.alt);
-      const open = () => {
+      const open = async () => {
+        if (!image.naturalWidth || document.querySelector('.lightbox')) return;
         const dialog = document.createElement("dialog");
         dialog.className = "lightbox";
         const close = document.createElement("button");
         close.type = "button"; close.textContent = "×"; close.setAttribute("aria-label", "关闭图片");
         const enlarged = document.createElement("img"); enlarged.src = image.currentSrc || image.src; enlarged.alt = image.alt;
         dialog.append(close, enlarged); document.body.append(dialog);
-        close.addEventListener("click", () => dialog.close());
-        dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close(); });
-        dialog.addEventListener("close", () => { dialog.remove(); image.focus(); }, {once: true});
+        const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+        let animation, closing = false;
+        const finish = () => { if (dialog.isConnected) dialog.close(); };
+        const dismiss = () => {
+          if (closing) return;
+          closing = true;
+          dialog.classList.remove('is-open');
+          if (!animation || motion.matches) { finish(); return; }
+          animation.reverse();
+          animation.finished.then(finish, () => {});
+        };
+        close.addEventListener("click", dismiss);
+        dialog.addEventListener("click", (event) => { if (event.target === dialog) dismiss(); });
+        dialog.addEventListener("cancel", (event) => { event.preventDefault(); dismiss(); });
+        dialog.addEventListener("close", () => { animation?.cancel(); dialog.remove(); image.focus({preventScroll:true}); }, {once: true});
+        await enlarged.decode().catch(() => {});
+        if (!dialog.isConnected || !image.isConnected || !enlarged.naturalWidth) { dialog.remove(); return; }
         dialog.showModal();
+        if (!motion.matches) {
+          const from = image.getBoundingClientRect(), to = enlarged.getBoundingClientRect();
+          animation = enlarged.animate([
+            {transform:`translate(${from.left-to.left}px,${from.top-to.top}px) scale(${from.width/to.width},${from.height/to.height})`},
+            {transform:'none'}
+          ], {duration:240,easing:'cubic-bezier(.2,.7,.2,1)',fill:'both'});
+        }
+        // Resolve the transparent backdrop before starting its transition.
+        getComputedStyle(dialog,'::backdrop').backgroundColor;
+        dialog.classList.add('is-open');
       };
       image.addEventListener("click", open);
       image.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); open(); } });
