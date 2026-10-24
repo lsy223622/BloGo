@@ -4,7 +4,7 @@
 
 `templates/` 的 `.html` / `.tmpl` 文件定义 `page` 模板。普通元数据始终交给 `html/template` 转义；只有已处理的 Markdown 或作者 HTML 正文进入可信 HTML 插入点。Standalone 不套主题模板，保留原文；Unlisted Standalone 必须在 head 内自行声明 robots noindex。
 
-站点名称、副标题和每页条数分别在 `config.yaml` 的 `site.title`、`site.subtitle`、`build.page_size` 配置。内容 `extra.cover` 是封面资源 URL；`extra.links` 是友链列表，每项包含 `name`、`url`、`image`、`description`。这些值仍为普通模板数据，不执行表达式。
+站点名称、副标题和每页条数分别在 `content/site.yaml` 的 `title`、`subtitle`、`page_size` 配置。内容 `extra.cover` 是封面资源 URL；`extra.links` 是友链列表，每项包含 `name`、`url`、`image`、`description`。这些值仍为普通模板数据，不执行表达式。
 
 友链按列表顺序显示，每项四个字段分别是名称、目标网址、头像和介绍。直接编辑对应页面的 Front Matter，例如：
 
@@ -17,13 +17,12 @@ extra:
       description: Go 编程语言
 ```
 
-站点配置的 `extra.profile` 控制标签下面的“关于站长”信息，按列表顺序显示。每项包含 `type`、`label` 和可选的 `url`；支持的图标类型为 `qq`、`email`、`github`、`website`、`cc`。不填写 `url` 时显示普通文字。图标保存在本地 `static/images/profile.svg`，使用当前主题的文字颜色。
+`content/site.yaml` 的 `profile` 控制标签下面的“关于站长”信息，按列表顺序显示。每项包含 `type`、`label` 和可选的 `url`；支持的图标类型为 `qq`、`email`、`github`、`website`、`cc`。不填写 `url` 时显示普通文字。图标保存在本地 `static/images/profile.svg`，使用当前主题的文字颜色。
 
 `email` 项仅填写 `label` 中的邮箱地址。生成时混淆地址，浏览器通过本地 JavaScript 还原成可选中、复制的普通文字。混淆用于减少简单采集脚本直接提取地址，不能阻止模拟浏览器的采集。
 
 ```yaml
-extra:
-  profile:
+profile:
     - type: email
       label: hello@example.com
     - type: cc
@@ -31,7 +30,7 @@ extra:
       url: https://creativecommons.org/licenses/by-nc-sa/4.0/
 ```
 
-导航 logo 使用原始 SVG 作为遮罩，保留 780×720 viewBox 和图形比例，透明背景上的填充跟随主题强调色；favicon 使用原始 SVG。首页与标签之间直接列出已配置且有公开文章的分类，点击进入对应文章列表。导航显示当前栏目，“关于”和“友链”只列出对应的 Public 页面，移动端链接组可换行。右栏标签区显示四行半，超出部分可用滚轮、触摸或键盘滚动；每行标签高 26px，行距 8px。RSS 和构建署名位于信息栏末尾，移动端随信息栏排在正文之后。
+导航Logo使用site.yaml指定的SVG作为遮罩，保持原图比例，填充跟随主题强调色；favicon使用配置指定的文件。默认包使用通用B字标记，个人图标放content/assets。首页与标签之间直接列出已配置且有公开文章的分类，点击进入对应文章列表。导航显示当前栏目，“关于”和“友链”只列出对应的 Public 页面，移动端链接组可换行。右栏标签区显示四行半，超出部分可用滚轮、触摸或键盘滚动；每行标签高 26px，行距 8px。RSS 和构建署名位于信息栏末尾，移动端随信息栏排在正文之后。
 
 表格单元格保留可读的最小列宽，窄屏在表格内部横向滚动；长 URL 可在单元格内换行，避免原生 HTML 表格被压成逐字排列。
 

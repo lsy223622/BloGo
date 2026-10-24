@@ -12,7 +12,7 @@ import (
 
 func TestGateA(t *testing.T) {
 	loc, _ := time.LoadLocation("Asia/Shanghai")
-	items, err := LoadContent("../../content", "../../taxonomies.yaml", loc, false)
+	items, err := LoadContent("../../content", "../../content/site.yaml", loc, false)
 	if err != nil {
 		t.Fatal(err)
 	}

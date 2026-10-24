@@ -25,17 +25,18 @@
 
 `content/assets/a/b.png` 的公开地址为 `/media/a/b.png`。附件与站点设置均参与构建快照和指纹；符号链接、缺失资源或与默认静态文件冲突会使构建失败。
 
-静态构建不需要统计配置，stats/report 不需要访问内容、模板或 Git。路径关系会检查所有声明路径，但物理访问只检查当前命令的路径。数据库、密钥、报告、发布目标不得覆盖输入或落入公共输出；不能把独立 build 输出同时声明为统计所依赖的 Manifest 目标。
+监听地址、base_url、timezone 及路径变化需要重启；扫描/报告间隔、统计开关、详细开关与保留期可以热更新。配置错误保留最后有效设置。扫描周期缩短会被独立的配置检查及时发现。
 
-六个命令都支持 `--config` 与 `--help`：
+七个命令支持 `--config` 和 `--help`：
 
 | 命令 | 行为 |
 | --- | --- |
-| `blog build --output output/site` | 独立生产构建，生成 public/meta；不切换 current |
-| `blog dev --output output/dev --listen 127.0.0.1:8080` | 包含 Draft 的回环预览；成功重建后自动刷新 |
-| `blog publish` | Linux 上校验完整 release 后原子切换 current |
-| `blog watch` | Linux 上持有发布锁，按指纹发现变更并发布；SIGINT/SIGTERM 停止 |
-| `blog stats` | 回环事件服务，读取 Manifest 并更新 SQLite |
-| `blog report` | 单次只读聚合，生成公开 JSON 与私有 HTML |
+| `blog serve` | Linux 正式服务，构建、页面、统计、报告与清理在一个进程内 |
+| `blog dev` | Windows/Linux 回环预览；默认25646，包含草稿，统计使用data/dev |
+| `blog build --output output/site` | 独立生产构建，生成public/meta |
+| `blog publish` | 手工构建并原子发布Linux release |
+| `blog watch` | 手工运行内容扫描发布 |
+| `blog stats` | 手工调试采集器，使用推导的正式Manifest和数据库 |
+| `blog report` | 手工生成一份公开JSON与私有HTML |
 
-失败返回非零退出码。build/publish/watch/dev 的内容错误包含源路径与相关字段；stats 的 HTTP 错误不暴露内部路径与 SQL。
+失败返回非零退出码。正常部署使用serve；手工调试命令不应与正在使用相同数据和端口的服务并行运行。内容错误包含源路径及字段，HTTP错误不暴露SQL或内部文件路径。

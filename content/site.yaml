@@ -1,18 +1,25 @@
+# 展示设置；修改后在下一轮内容扫描时更新。
 schema_version: 1
 title: BloGo
 subtitle: 记录，思考，分享。
 language: zh-CN
 page_size: 10
 summary_max_chars: 160
+# content/assets/brand/logo.svg 对应 /media/brand/logo.svg。
+# Logo 使用透明 SVG 遮罩，颜色跟随主题；favicon 使用原文件。
 logo: /images/logo.svg
 favicon: /images/favicon.svg
+# 每项包含 type、label，可选 url；类型支持 qq/email/github/website/cc。
+# email 的 label 填邮箱，页面混淆后用 JS 还原为普通文字。
 profile: []
+# 键是稳定 ID；文章只使用已配置分类，分类可有 parent。
 categories:
   tech:
     name: 技术 / Tech 🛠️
   hardware:
     name: 硬件 & PCB
     parent: tech
+# 只有配置且被使用的标签显示；公共列表取 Public 文章。
 tags:
   esp32:
     name: ESP32 ⚡

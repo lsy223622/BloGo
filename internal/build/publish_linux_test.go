@@ -6,8 +6,30 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/lsy223622/BloGo/internal/config"
 	"github.com/lsy223622/BloGo/internal/filelock"
 )
+
+func TestPublishedDataMovesWithUpgrade(t *testing.T) {
+	c := buildFixture(t)
+	if _, err := Publish(c); err != nil {
+		t.Fatal(err)
+	}
+	moved := filepath.Join(t.TempDir(), "upgraded")
+	if err := os.Rename(filepath.Dir(c.FilePath()), moved); err != nil {
+		t.Fatal(err)
+	}
+	next, err := config.Load(filepath.Join(moved, "config.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = next.Validate("publish", ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = ReadPublished(next.Paths.Current); err != nil {
+		t.Fatal(err)
+	}
+}
 
 func TestPublishAssetsBelongToCurrentSnapshot(t *testing.T) {
 	c := buildFixture(t)

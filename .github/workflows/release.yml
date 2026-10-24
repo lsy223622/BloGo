@@ -1,0 +1,101 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+jobs:
+  tests:
+    uses: ./.github/workflows/ci.yml
+  package:
+    needs: tests
+    runs-on: ubuntu-latest
+    env:
+      GOFLAGS: -mod=readonly
+      CGO_ENABLED: '0'
+      VERSION: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.27.0'
+      - name: Compile locked targets
+        run: |
+          mkdir -p output/bin
+          GOOS=linux GOARCH=amd64 go build -trimpath -o output/bin/blog-linux-amd64 ./cmd/blog
+          GOOS=linux GOARCH=arm64 go build -trimpath -o output/bin/blog-linux-arm64 ./cmd/blog
+          GOOS=windows GOARCH=amd64 go build -trimpath -o output/bin/blog-windows-amd64.exe ./cmd/blog
+          git diff --exit-code -- go.mod go.sum
+      - run: python scripts/package-release.py --version "$VERSION" --binary-dir output/bin --output output/release
+      - run: cd output/release && sha256sum -c SHA256SUMS
+      - uses: actions/upload-artifact@v7
+        with:
+          name: packages
+          path: |
+            output/release/*.tar.gz
+            output/release/*.zip
+            output/release/SHA256SUMS
+  smoke:
+    needs: package
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            target: linux-amd64
+          - os: ubuntu-24.04-arm
+            target: linux-arm64
+          - os: windows-latest
+            target: windows-amd64
+    runs-on: ${{ matrix.os }}
+    env:
+      VERSION: ${{ github.ref_name }}
+      TARGET: ${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: packages
+          path: packages
+      - name: Linux package without build tools
+        if: runner.os == 'Linux'
+        run: docker run --rm --network none --read-only --user 65534:65534 --tmpfs /tmp:rw,exec,nosuid,mode=1777 -v "$PWD/packages:/packages:ro" -v "$PWD/scripts/smoke-package.sh:/smoke.sh:ro" --entrypoint /bin/sh alpine:3.22 /smoke.sh "/packages/BloGo-$VERSION-$TARGET.tar.gz"
+      - name: Windows preview package
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $archive = "packages/BloGo-$env:VERSION-windows-amd64-preview.zip"
+          Expand-Archive -LiteralPath $archive -DestinationPath extracted
+          $root = (Get-ChildItem extracted -Directory | Select-Object -First 1).FullName
+          & "$root/blog.exe" build --config "$root/config.yaml" --output "$root/check"
+          if ($LASTEXITCODE -ne 0) { throw 'Package build failed' }
+          $process = Start-Process "$root/blog.exe" -ArgumentList @('dev','--config',"`"$root/config.yaml`"") -PassThru -WindowStyle Hidden
+          try {
+            $ready = $false
+            for ($attempt=0; $attempt -lt 100; $attempt++) {
+              try { $response=Invoke-WebRequest http://127.0.0.1:25646/; if ($response.StatusCode -eq 200) { $ready=$true; break } } catch {}
+              Start-Sleep -Milliseconds 100
+            }
+            if (-not $ready) { throw 'Preview did not start' }
+            Invoke-WebRequest http://127.0.0.1:25646/data/stats.json | Out-Null
+          } finally { if (-not $process.HasExited) { Stop-Process -Id $process.Id } }
+  release:
+    needs: smoke
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ github.ref_name }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: packages
+          path: packages
+      - name: Publish tested archives
+        env:
+          GH_REPO: ${{ github.repository }}
+        run: gh release create "$VERSION" packages/*.tar.gz packages/*.zip packages/SHA256SUMS --verify-tag --generate-notes

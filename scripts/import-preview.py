@@ -140,11 +140,11 @@ def import_preview(source, older, attachments, output, project):
     # Category/tag organization is solely for this local trial, not historical metadata.
     taxonomy={'schema_version':1,'categories':{'notes':{'name':'笔记'},'tech':{'name':'技术','parent':'notes'},'life':{'name':'生活','parent':'notes'}},
         'tags':{'notes':{'name':'随笔 / Notes'},'life':{'name':'生活'},'blog':{'name':'博客 · Typecho'}}}
-    (output/'taxonomies.yaml').write_text(json.dumps(taxonomy,ensure_ascii=False,indent=2),encoding='utf-8')
+    taxonomy.update(title=site['title'],subtitle=site['description'],page_size=5)
+    (output/'content/site.yaml').write_text(json.dumps(taxonomy,ensure_ascii=False,indent=2),encoding='utf-8')
     template_path=Path(__import__('os').path.relpath(project/'templates',output)).as_posix()
-    config={'site':{'base_url':'http://127.0.0.1:8771','title':site['title'],'subtitle':site['description'],'timezone':'Asia/Shanghai','language':'zh-CN'},
-        'paths':{'source':'content','templates':template_path,'static':'static','taxonomies':'taxonomies.yaml'},
-        'build':{'page_size':5,'strict_links':False}}
+    config={'server':{'base_url':'http://127.0.0.1:25646'},'timezone':'Asia/Shanghai',
+        'paths':{'content':'content','templates':template_path,'static':'static'}}
     (output/'config.yaml').write_text(json.dumps(config,ensure_ascii=False,indent=2),encoding='utf-8')
     if any((source/name).read_bytes()!=data for name,data in originals.items()): raise RuntimeError('source changed during import; retry against a stable working tree')
     report={'schema_version':1,'source':str(source),'older_source':str(older) if older else None,'site':site,'entries':entries,

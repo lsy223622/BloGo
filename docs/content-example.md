@@ -58,7 +58,7 @@ tags:
 ```
 
 本文件位于 `docs/`，不会被当作文章生成。实际内容目录由 `config.yaml` 的
-`paths.source` 指定：项目示例为 `content/`，当前个人导入数据为
+`paths.content` 指定：项目示例为 `content/`，当前个人导入数据为
 `output/personal-preview/content/`。图片根路径对应各自的 `paths.static`。
 
 ## 全部文章元数据

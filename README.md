@@ -1,52 +1,42 @@
 # BloGo
 
-Go 源码及行为契约见 [技术设计](docs/design/DESIGN.md) 和 [实施计划](docs/design/IMPLEMENTATION_PLAN.md)。
+一个用 Go 预先生成完整 HTML 的单作者博客。下载发行包、解压并启动即可阅读和写作，不需要安装 Go、Node、Python 或数据库服务器。
 
-使用 Go 1.27 或更新版本：
+## 开始使用
 
-```sh
-go test ./...
-go vet ./...
-go run ./cmd/blog --help
-go run ./cmd/blog build --help
-go run ./cmd/blog build --config config.yaml --output output/site
-```
+- Linux amd64/arm64：选择对应 `.tar.gz`，解压后执行 `./blog serve`。
+- Windows amd64：选择 `-preview.zip`，解压后执行 `.\blog.exe dev`。
 
-`config.yaml` 是静态站点配置示例。相对路径（包括 `--output`）相对于配置文件所在目录解析；输出目录必须独立于内容、模板、静态资源和配置。YAML 拒绝未知键、重复键和类型错误，扩展数据写入 `extra` 映射。日期使用配置的 IANA 时区，程序内含时区数据库。
+浏览器打开 <http://127.0.0.1:25646/>。首次运行会建立私有 `data/`；正式站点请先在 `config.yaml` 填写 `server.base_url`，再按 [部署说明](docs/deployment.md) 配置域名反代和 TLS。
 
-路径关系先按所有声明路径检查，再物理解析当前命令需要访问的路径；其他组件的私有目录无需对当前进程开放。发布配置的 `current` 可以尚不存在；已存在时必须为指向 releases 内子目录的符号链接。Linux 部署还要求 staging、releases 和 current 所在目录处于同一文件系统，统计密钥不对组和其他用户开放。
+编辑 `content/site.yaml` 设置名称、副标题、图标、每页条数、联系方式、分类和标签。在 `content/posts/` 写 Markdown 或 HTML。附件放 `content/assets/`，例如 `content/assets/photo.png` 的地址是 `/media/photo.png`。
 
-内容入口为 `internal/site.LoadContent`，它读取 `content/posts/`、`content/pages/` 和分类标签文件，校验身份、规范 URL、状态、日期和引用后按稳定 ID 返回内容。生产读取过滤 Draft；预览读取包含 Draft；Public 与 Unlisted 保留独立的公共列表语义。
+`serve` 是一个进程、一个端口，负责页面、事件采集、内容扫描和定时报告。默认每分钟检查内容、每五分钟刷新统计。`dev` 包含草稿并自动刷新浏览器，统计只记非草稿内容，数据独立存放在 `data/dev/`。
 
-示例内容包含 Public 文章、无日期独立页面、Unlisted HTML 和无日期 Draft。分类标签的键使用 ASCII 稳定 ID，`name` 保留中文、大小写和 emoji。HTML 正文与 Markdown 源码在解析时保持原文。
-
-完整静态构建、输入快照与链接校验见 [构建说明](docs/build.md)，默认主题与自托管资源见 [主题说明](docs/theme.md)。
-
-本地预览包含 Draft，使用独立目录并在成功重建后刷新浏览器：
-
-```sh
-go run ./cmd/blog dev --config config.yaml --output output/dev --listen 127.0.0.1:8080
-```
-
-六个命令为 build、dev、publish、watch、stats、report。Linux 的 publish/watch 生成完整 release 后原子切换 current，stats 只监听回环，report 单次生成公开 JSON 与私有 HTML。安装示例分别使用 `deploy/config-build.yaml` 和 `deploy/config-stats.yaml`。
+## 写作与管理
 
 - [配置与命令](docs/configuration.md)
-- [内容模型与输出](docs/content-output.md)
-- [Markdown 支持](docs/markdown-support.md)
-- [文章格式与完整语法示例](docs/content-example.md)
-- [Linux 部署与回滚](docs/deployment.md)
-- [统计、指标与备份恢复](docs/statistics.md)
-- [安全与权限验收](docs/security-validation.md)
-- [本地博文试用导入](docs/local-preview-import.md)
+- [全部文章元数据与 Markdown 示例](docs/content-example.md)
+- [内容身份、分类、标签与 URL](docs/content-output.md)
+- [构建、扫描与失败保留](docs/build.md)
+- [默认主题和局部导航](docs/theme.md)
+- [Linux 部署、备份与升级](docs/deployment.md)
+- [统计与可选详细事件](docs/statistics.md)
 
-静态页面由 Nginx 提供；统计停机不阻断阅读。公开统计每五分钟刷新，只含本轮 Manifest 中启用统计的 Public 页面。Unlisted 明细与已删除页面历史留在私有报告。浏览器使用每日随机标识，服务端只持久化按日期 HMAC 的访客摘要与来源主机名。
+私有报告在 `data/private/report.html`，本地预览则在 `data/dev/private/report.html`。它不通过站点 HTTP 提供，复制到本机直接打开即可。升级前停止程序并备份 `config.yaml`、`content/` 和完整 `data/`；新包解压到新目录，再迁移这三项。数据库与原访客密钥必须一起保留。
 
-完整测试：
+## 从源码开发
+
+构建环境需要 Go 1.27+。JavaScript 和导入工具测试另需 Node 与 Python；这些都不是发行包的运行依赖。
 
 ```sh
 go test ./...
 go vet ./...
-node --test scripts/stats-browser.test.cjs scripts/theme-browser.test.cjs
+node --test scripts/*browser.test.cjs
+python -m unittest discover -s scripts -p 'test_*.py'
+go run ./cmd/blog dev
 ```
 
-Go 测试不依赖外网或 Docker。Linux 权限、原子发布和恢复的隔离验收步骤见部署说明；生产域名、TLS、systemd 安装与 Nginx 重载由管理员按实际环境审查执行。
+[技术设计](docs/design/DESIGN.md)、[发行实施计划](docs/design/RELEASE_IMPLEMENTATION_PLAN.md) 与 [验收说明](docs/security-validation.md) 记录架构及验证方法。
+
+发行工作流在 `v*` 标签触发：测试、锁定模块构建、白名单打包、解压验收，最后上传发行资产。源码仓库与发行包使用通用示例身份，个人输入与运行数据不进入包。

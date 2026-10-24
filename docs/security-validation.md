@@ -1,21 +1,13 @@
-# V1 权限与故障验收
+# 安全与发行验收
 
-应用账户及目录布局见 [部署说明](deployment.md)。自动测试使用临时目录与独立容器，以下是可复现的检查入口。
+源码检查运行go test ./...、go vet ./...、node --test scripts/*browser.test.cjs，以及Python导入/打包测试。针对当前平台不适用的Linux原子发布与权限测试必须在Linux中执行。
 
-| 边界 | 验证入口 | 通过条件 |
-| --- | --- | --- |
-| 源文件、模板、静态资源 | `TestReadSourcesRejectsSymlinks`、`TestScanRejectsLinksAndSpecialFiles` | 链接和 FIFO 明确拒绝，读取受 os.Root 约束 |
-| 路径关系 | `TestInvalidIdentities`、`TestInputOutputAndPrivatePathSeparation`、`TestLinkedOutputOverlap` | 拒绝穿越、非法路由及私有路径与输出重叠 |
-| 发布 | `TestPublishAtomicVersionAndRetention`、`TestFailedCurrentSwitchPreservesLink` | 失败保留旧 current，进程锁拒绝并发，HTML 与 Manifest 同版本 |
-| 历史重定向 | `scripts/verify-nginx.ps1` | 生成的 map 区分路径大小写，转义点字符，规范 URL 不循环 |
-| 预览 | `TestPreviewCanonicalRoutesDraftsAndPrivateFiles` | 回环访问、规范 301、404、禁止 meta 与目录列表 |
-| 采集 API | `TestEventAPIRejectsMalformedAndUnwantedFields`、`TestManifestReloadAndControlledFailure` | 严格字段与大小限制，失效身份拒绝，数据库故障返回受控 503 |
-| SQLite 事务 | `TestTransactionFailureRollsBackEverything`、`TestLockDeadlineDoesNotPartiallyWrite` | 错误与超时无部分更新 |
-| 报告 | `TestReportVisibilityHistoryAndReadOnlySnapshot`、`TestReportLocksAndManifestChangePreserveOutputs` | 本轮公开输出仅含 Public 身份，版本变化与失败保留上次输出 |
-| 实际 Linux 账户 | `scripts/verify-stack.ps1` | collector/reporter 无法读取内容与凭据，Nginx 无法读取 Manifest、数据库、密钥和私有报告 |
-| Nginx 防滥用 | `scripts/verify-stack.ps1` | 2 KiB 限制返回 413，伪造转发头不能绕过连接来源限速，突发返回 429 |
-| 恢复 | `TestVacuumBackupAndKeyRestoreContinueCollection` 与部署栈 | 一致快照与原密钥恢复后继续去重、UV、PV 和报告 |
+scripts/verify-stack.ps1在隔离、无网络、只读容器根文件系统运行Linux集成测试。容器中应用以单个普通UID运行，核对统一serve、代理、可信IP、404/301、缓存、私有路径拒绝、热重建失败保留、重启去重及数据库/密钥恢复。它不接触生产服务或复用生产统计。
 
-Linux 测试需在本地 Linux 文件系统运行；Windows 目录挂载不能证明 Unix mode 或原子链接切换行为。隔离栈把数据放在容器 `/tmp`，根文件系统和源码只读，无外部网络，也不发布主机端口。容器 root 仅创建临时测试目录并分配身份，应用进程分别降权。
+发行验收必须从归档解压，运行环境不安装Go/Node/Python。核对归档白名单、二进制权限、SHA256SUMS、通用默认图标及依赖许可证，再检查Linux正式服务和Windows预览。arm64二进制的交叉编译不能替代原生运行测试；未实际执行的平台须明确说明。
 
-内容是受信任作者输入，HTML 与 Markdown 中的原始 HTML 可运行作者脚本。统计接口不提供内容写入或 SQL 查询能力。Unlisted 是列表可见性选择，直接 URL 仍可访问；公开报告采用五分钟最终一致性，改变可见性后，上次成功报告在刷新前可能保留旧条目。
+HTTP请求只读取当前public与明确统计端点；config/content/data/meta/私有报告/数据库/密钥、穿越与目录列表均须拒绝。公开JSON须无IP、UA、语言或访客摘要，且不包含Unlisted身份。统计关闭时两个端点不可用且不注入采集脚本；草稿不采集。
+
+实际浏览器核对桌面/手机、深浅主题、列表与正文读数、Swup单次采集、目录平滑滚动、灯箱和无JS阅读。首次启动、热更新、坏配置/坏内容、统计明细开关及保留期、正常退出、第二实例拒绝、重启和备份恢复分别保留证据。
+
+云端Actions和生产环境只有在对应运行结果存在时才能宣称通过；本地验收不代替域名TLS及实际systemd安装核对。

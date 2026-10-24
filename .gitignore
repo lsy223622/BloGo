@@ -3,5 +3,6 @@
 /blog.exe
 /output/
 /runtime/
+/data/
 /.playwright-cli/
 __pycache__/

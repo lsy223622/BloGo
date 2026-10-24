@@ -43,8 +43,8 @@ class ImportPreviewTests(unittest.TestCase):
             self.assertEqual(by_name['友链.md']['kind'],'page')
             self.assertIsNone(by_name['友链.md']['published'])
             self.assertEqual(result['site']['title'],'真实名称')
-            config=json.loads((project/'output/trial/config.yaml').read_text(encoding='utf-8'))
-            self.assertEqual(config['site']['subtitle'],'真实描述')
+            config=json.loads((project/'output/trial/content/site.yaml').read_text(encoding='utf-8'))
+            self.assertEqual(config['subtitle'],'真实描述')
             again=self.module.import_preview(source,older,None,project/'output'/'trial',project)
             self.assertEqual([e.get('id') for e in result['entries']],[e.get('id') for e in again['entries']])
 

@@ -1,0 +1,22 @@
+[Unit]
+Description=BloGo static blog and statistics
+After=network.target
+
+[Service]
+Type=simple
+User=blogo
+Group=blogo
+WorkingDirectory=/opt/blogo
+ExecStart=/opt/blogo/blog serve --config /opt/blogo/config.yaml
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=15s
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/blogo/data
+
+[Install]
+WantedBy=multi-user.target
