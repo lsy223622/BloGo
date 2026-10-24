@@ -230,6 +230,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	day := now.In(h.zone).Format("2006-01-02")
 	record := Record{EventID: event.EventID, PageID: event.PageID, Day: day, Source: source, VisitorHash: VisitorDigest(h.key, day, event.VisitorID), ExpiresAt: now.Add(time.Duration(h.config.Stats.EventRetention)).Unix()}
+	if h.config.Stats.Details.Enabled {
+		record.Details = &DetailEvent{RecordedAt: now, URL: current.URL, Title: current.Title, IP: ip.String(), UserAgent: boundedHeader(r.UserAgent(), 512), Language: preferredLanguage(r.Header.Get("Accept-Language"))}
+	}
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 	if _, err = h.store.Record(ctx, record); err != nil {

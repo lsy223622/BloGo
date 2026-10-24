@@ -58,7 +58,7 @@ func Serve(ctx context.Context, c *config.Config, log io.Writer) error {
 			return err
 		case <-ticker.C:
 			cleanup, stop := context.WithTimeout(ctx, 10*time.Second)
-			err := store.Cleanup(cleanup, time.Now(), time.Duration(c.Stats.VisitorRetention), handler.zone)
+			err := store.Cleanup(cleanup, time.Now(), time.Duration(c.Stats.VisitorRetention), handler.zone, time.Duration(c.Stats.Details.Retention))
 			stop()
 			if err != nil {
 				fmt.Fprintf(log, "statistics cleanup: %v\n", err)

@@ -21,6 +21,7 @@ type Record struct {
 	EventID, PageID, Day, Source string
 	VisitorHash                  []byte
 	ExpiresAt                    int64
+	Details                      *DetailEvent
 }
 
 func OpenWriter(ctx context.Context, path string) (*Store, error) {
@@ -75,7 +76,7 @@ func open(ctx context.Context, path string, write bool) (*Store, error) {
 	} else {
 		var version int
 		err = db.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version)
-		if err == nil && version != 1 {
+		if err == nil && version != 2 {
 			err = fmt.Errorf("unsupported statistics schema version %d", version)
 		}
 	}
@@ -118,8 +119,13 @@ func (s *Store) initialize(ctx context.Context) error {
 		if _, err = tx.ExecContext(ctx, schema); err != nil {
 			return err
 		}
-	} else if version != 1 {
+	} else if version != 1 && version != 2 {
 		return fmt.Errorf("unsupported statistics schema version %d", version)
+	}
+	if version == 0 || version == 1 {
+		if _, err = tx.ExecContext(ctx, detailsSchema); err != nil {
+			return err
+		}
 	}
 	for _, query := range []string{"SELECT day,pv,uv FROM daily_site_stats LIMIT 0", "SELECT day,page_id,pv FROM daily_page_stats LIMIT 0", "SELECT day,page_id,source,pv FROM daily_referrers LIMIT 0", "SELECT day,visitor_hash FROM visitor_seen LIMIT 0", "SELECT event_id,expires_at FROM event_seen LIMIT 0"} {
 		rows, err := tx.QueryContext(ctx, query)
@@ -129,6 +135,13 @@ func (s *Store) initialize(ctx context.Context) error {
 		if err = rows.Close(); err != nil {
 			return err
 		}
+	}
+	rows, err := tx.QueryContext(ctx, "SELECT event_id,recorded_at,page_id,url,title,ip,user_agent,language,browser,os,device,visitor_hash,source FROM event_details LIMIT 0")
+	if err != nil {
+		return err
+	}
+	if err = rows.Close(); err != nil {
+		return err
 	}
 	return tx.Commit()
 }
@@ -148,7 +161,7 @@ func (s *Store) Record(ctx context.Context, event Record) (bool, error) {
 		return false, err
 	}
 	defer tx.Rollback()
-	inserted, err := tx.ExecContext(ctx, "INSERT INTO event_seen(event_id,expires_at) VALUES(?,?) ON CONFLICT(event_id) DO NOTHING", event.EventID, event.ExpiresAt)
+	inserted, err := tx.ExecContext(ctx, "INSERT INTO event_seen(event_id,expires_at) SELECT ?,? WHERE NOT EXISTS (SELECT 1 FROM event_details WHERE event_id=?) ON CONFLICT(event_id) DO NOTHING", event.EventID, event.ExpiresAt, event.EventID)
 	if err != nil {
 		return false, err
 	}
@@ -179,10 +192,17 @@ func (s *Store) Record(ctx context.Context, event Record) (bool, error) {
 			return false, err
 		}
 	}
+	if detail := event.Details; detail != nil {
+		browser, osName, device := classifyUA(detail.UserAgent)
+		_, err = tx.ExecContext(ctx, `INSERT INTO event_details(event_id,recorded_at,page_id,url,title,ip,user_agent,language,browser,os,device,visitor_hash,source) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`, event.EventID, detail.RecordedAt.UnixMilli(), event.PageID, detail.URL, detail.Title, detail.IP, boundedHeader(detail.UserAgent, 512), boundedHeader(detail.Language, 256), browser, osName, device, event.VisitorHash, event.Source)
+		if err != nil {
+			return false, err
+		}
+	}
 	return false, tx.Commit()
 }
 
-func (s *Store) Cleanup(ctx context.Context, now time.Time, visitorRetention time.Duration, zone *time.Location) error {
+func (s *Store) Cleanup(ctx context.Context, now time.Time, visitorRetention time.Duration, zone *time.Location, detailsRetention ...time.Duration) error {
 	if !s.writable {
 		return fmt.Errorf("read-only statistics connection")
 	}
@@ -196,6 +216,13 @@ func (s *Store) Cleanup(ctx context.Context, now time.Time, visitorRetention tim
 	}
 	cutoff := now.Add(-visitorRetention).In(zone).Format("2006-01-02")
 	if _, err = tx.ExecContext(ctx, "DELETE FROM visitor_seen WHERE day<?", cutoff); err != nil {
+		return err
+	}
+	retention := 168 * time.Hour
+	if len(detailsRetention) > 0 {
+		retention = detailsRetention[0]
+	}
+	if _, err = tx.ExecContext(ctx, "DELETE FROM event_details WHERE recorded_at<=?", now.Add(-retention).UnixMilli()); err != nil {
 		return err
 	}
 	return tx.Commit()

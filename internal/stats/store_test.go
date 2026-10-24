@@ -230,7 +230,7 @@ func TestLockDeadlineDoesNotPartiallyWrite(t *testing.T) {
 }
 
 func TestUnknownSchemaAndInvalidKeyAreNotReinitialized(t *testing.T) {
-	for _, version := range []int{0, 2} {
+	for _, version := range []int{0, 3} {
 		s, path := openStore(t)
 		if _, err := s.db.Exec("PRAGMA user_version=" + fmt.Sprint(version)); err != nil {
 			t.Fatal(err)

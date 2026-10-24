@@ -49,6 +49,8 @@ type privatePage struct {
 	Sources []sourceCount
 }
 type reportSnapshot struct {
+	Details     []DetailEvent
+	DetailCount int
 	PV, UV      counts
 	Days        []trend
 	Pages       map[string]counts
@@ -148,6 +150,10 @@ func (s *Store) snapshot(ctx context.Context, today, seven, thirty string) (repo
 		}
 		return a.Source < b.Source
 	})
+	result.Details, result.DetailCount, err = readDetails(ctx, tx)
+	if err != nil {
+		return result, err
+	}
 	return result, tx.Commit()
 }
 
@@ -258,6 +264,9 @@ func generateReport(ctx context.Context, c *config.Config, now time.Time, before
 		return err
 	}
 	data = append(data, '\n')
+	for i := range snapshot.Details {
+		snapshot.Details[i].RecordedAt = snapshot.Details[i].RecordedAt.In(zone)
+	}
 	var html bytes.Buffer
 	model := struct {
 		Title, BaseURL, BuildID, Generated string
@@ -265,7 +274,10 @@ func generateReport(ctx context.Context, c *config.Config, now time.Time, before
 		Days                               []trend
 		Pages                              []privatePage
 		Sources                            []sourceCount
-	}{c.Site.Title, c.Site.BaseURL, manifest.BuildID, now.Format(time.RFC3339), snapshot.PV, snapshot.UV, snapshot.Days, pages, snapshot.Sources}
+		Details                            []DetailEvent
+		DetailCount                        int
+		DetailsEnabled                     bool
+	}{c.Site.Title, c.Site.BaseURL, manifest.BuildID, now.Format(time.RFC3339), snapshot.PV, snapshot.UV, snapshot.Days, pages, snapshot.Sources, snapshot.Details, snapshot.DetailCount, c.Stats.Details.Enabled}
 	if err = privateReportTemplate.Execute(&html, model); err != nil {
 		return err
 	}
@@ -321,4 +333,4 @@ func reportTemp(target string, data []byte, mode os.FileMode) (string, error) {
 	return name, nil
 }
 
-var privateReportTemplate = template.Must(template.New("report").Parse(`<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{.Title}} · 统计报告</title><style>body{font:16px/1.7 system-ui,sans-serif;color:#23332e;background:#f5f7f5;margin:0}main{max-width:1100px;margin:auto;padding:32px 20px}table{border-collapse:collapse;width:100%;background:white;margin:20px 0}th,td{text-align:left;padding:8px 12px;border-bottom:1px solid #dce4de;overflow-wrap:anywhere}th{background:#e8efea}h1,h2,h3{line-height:1.3}small{color:#52665b}a{color:#266b50}.scroll{overflow:auto}code{overflow-wrap:anywhere}details{padding:8px;background:white;margin:12px 0}</style></head><body><main><h1>{{.Title}} · 私有统计报告</h1><p>版本 <code>{{.BuildID}}</code><br>生成时间 {{.Generated}}</p><p>UV 为各日独立访客数之和，不表示跨日去重人数。</p><table><tr><th>指标</th><th>7 天</th><th>30 天</th><th>累计</th></tr><tr><td>PV</td><td>{{.PV.Seven}}</td><td>{{.PV.Thirty}}</td><td>{{.PV.All}}</td></tr><tr><td>UV（日合计）</td><td>{{.UV.Seven}}</td><td>{{.UV.Thirty}}</td><td>{{.UV.All}}</td></tr></table><h2>每日趋势</h2><div class="scroll"><table><tr><th>日期</th><th>PV</th><th>UV</th></tr>{{range .Days}}<tr><td>{{.Day}}</td><td>{{.PV}}</td><td>{{.UV}}</td></tr>{{end}}</table></div><h2>来源总量</h2><table><tr><th>主机名</th><th>7 天</th><th>30 天</th><th>累计</th></tr>{{range .Sources}}<tr><td>{{.Source}}</td><td>{{.Seven}}</td><td>{{.Thirty}}</td><td>{{.All}}</td></tr>{{end}}</table><h2>页面与来源</h2>{{range .Pages}}<details><summary>{{.Title}} · {{.All}} PV</summary><p><code>{{.ID}}</code> · {{.Visibility}}{{if .URL}} · <a href="{{$.BaseURL}}{{.URL}}">{{.URL}}</a>{{end}}</p><p>7 天 {{.Seven}} · 30 天 {{.Thirty}} · 累计 {{.All}}</p><table><tr><th>来源</th><th>7 天</th><th>30 天</th><th>累计</th></tr>{{range .Sources}}<tr><td>{{.Source}}</td><td>{{.Seven}}</td><td>{{.Thirty}}</td><td>{{.All}}</td></tr>{{end}}</table></details>{{end}}</main></body></html>`))
+var privateReportTemplate = template.Must(template.New("report").Parse(`<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{.Title}} · 统计报告</title><style>body{font:16px/1.7 system-ui,sans-serif;color:#23332e;background:#f5f7f5;margin:0}main{max-width:1100px;margin:auto;padding:32px 20px}table{border-collapse:collapse;width:100%;background:white;margin:20px 0}th,td{text-align:left;padding:8px 12px;border-bottom:1px solid #dce4de;overflow-wrap:anywhere}th{background:#e8efea}h1,h2,h3{line-height:1.3}small{color:#52665b}a{color:#266b50}.scroll{overflow:auto}code{overflow-wrap:anywhere}details{padding:8px;background:white;margin:12px 0}</style></head><body><main><h1>{{.Title}} · 私有统计报告</h1><p>版本 <code>{{.BuildID}}</code><br>生成时间 {{.Generated}}</p><p>UV 为各日独立访客数之和，不表示跨日去重人数。</p><table><tr><th>指标</th><th>7 天</th><th>30 天</th><th>累计</th></tr><tr><td>PV</td><td>{{.PV.Seven}}</td><td>{{.PV.Thirty}}</td><td>{{.PV.All}}</td></tr><tr><td>UV（日合计）</td><td>{{.UV.Seven}}</td><td>{{.UV.Thirty}}</td><td>{{.UV.All}}</td></tr></table><h2>每日趋势</h2><div class="scroll"><table><tr><th>日期</th><th>PV</th><th>UV</th></tr>{{range .Days}}<tr><td>{{.Day}}</td><td>{{.PV}}</td><td>{{.UV}}</td></tr>{{end}}</table></div><h2>来源总量</h2><table><tr><th>主机名</th><th>7 天</th><th>30 天</th><th>累计</th></tr>{{range .Sources}}<tr><td>{{.Source}}</td><td>{{.Seven}}</td><td>{{.Thirty}}</td><td>{{.All}}</td></tr>{{end}}</table><h2>页面与来源</h2>{{range .Pages}}<details><summary>{{.Title}} · {{.All}} PV</summary><p><code>{{.ID}}</code> · {{.Visibility}}{{if .URL}} · <a href="{{$.BaseURL}}{{.URL}}">{{.URL}}</a>{{end}}</p><p>7 天 {{.Seven}} · 30 天 {{.Thirty}} · 累计 {{.All}}</p><table><tr><th>来源</th><th>7 天</th><th>30 天</th><th>累计</th></tr>{{range .Sources}}<tr><td>{{.Source}}</td><td>{{.Seven}}</td><td>{{.Thirty}}</td><td>{{.All}}</td></tr>{{end}}</table></details>{{end}}{{if or .DetailsEnabled .DetailCount}}<h2>最近事件</h2><p>保留 {{.DetailCount}} 条明细，最多显示最近 1000 条。{{if not .DetailsEnabled}}详细记录已关闭，现有明细按保留期清理。{{end}}</p><div class="scroll"><table><tr><th>时间</th><th>页面</th><th>IP</th><th>来源</th><th>浏览器 / 系统 / 设备</th><th>语言</th><th>UA 与事件身份</th></tr>{{range .Details}}<tr><td>{{.RecordedAt.Format "2006-01-02 15:04:05Z07:00"}}</td><td>{{.Title}}<br><code>{{.PageID}}</code><br>{{.URL}}</td><td>{{.IP}}</td><td>{{.Source}}</td><td>{{.Browser}} / {{.OS}} / {{.Device}}</td><td>{{.Language}}</td><td><details><summary>详情</summary><p>{{.UserAgent}}</p><p>事件 {{.EventID}}<br>当日访客摘要 {{.VisitorDigest}}</p></details></td></tr>{{end}}</table></div>{{end}}</main></body></html>`))
