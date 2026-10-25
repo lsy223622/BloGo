@@ -15,9 +15,9 @@ tags:
 
 # 如何使用这份文件
 
-这份文件本身就是一份可解析的文章源文件。复制到站点内容目录下的
-`posts/article-format-example.md`，即可在本地预览中查看。写新文章时修改身份、
-标题、日期和正文，并按需删减可选字段。当前状态为 `draft`。
+这份文件本身就是一篇已公开的示例文章。写新文章时复制下方的短模板，
+修改身份、标题、日期和正文，再按需添加可选字段。短模板使用 `draft` 状态，
+检查完成后改成 `public` 即可发布。
 
 顶部两个 `---` 之间是 YAML Front Matter，后面是 Markdown 正文。
 使用 UTF-8 编码、空格缩进，列表每项单独一行。多行说明使用 `>-` 会把普通换行
@@ -41,9 +41,10 @@ tags:
 这里开始写正文。
 ```
 
-完整格式源文件还可在 `docs/content-example.md` 中查看。实际内容目录由 `config.yaml` 的
-`paths.content` 指定：项目示例为 `content/`，当前个人导入数据为
-`output/personal-preview/content/`。图片根路径对应各自的 `paths.static`。
+完整格式源文件还可在 `docs/content-example.md` 中查看。默认文章目录为
+`content/posts/`，独立页面放在 `content/pages/`；如需改变内容根目录，使用
+`config.yaml` 的 `paths.content`。附件放在 `content/assets/`，例如
+`content/assets/photo.png` 在正文中写为 `/media/photo.png`。
 
 ## 全部文章元数据
 

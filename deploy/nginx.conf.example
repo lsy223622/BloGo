@@ -1,3 +1,8 @@
+upstream blogo_backend {
+    server 127.0.0.1:25646;
+    keepalive 16;
+}
+
 server {
     listen 443 ssl;
     server_name blog.example.com;
@@ -5,7 +10,7 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/blog.example.com/privkey.pem;
 
     location / {
-        proxy_pass http://127.0.0.1:25646;
+        proxy_pass http://blogo_backend;
         proxy_http_version 1.1;
         proxy_set_header Connection "";
         proxy_set_header Host $host;

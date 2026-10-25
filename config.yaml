@@ -8,6 +8,7 @@ server:
 timezone: Asia/Shanghai
 build:
   scan_interval: 60s
+  # 保留的网页构建版本数，包含当前版本；不是程序升级包的保留数。
   keep_releases: 3
   strict_links: false
 stats:

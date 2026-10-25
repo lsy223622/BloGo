@@ -46,4 +46,4 @@ SQLite单写者、WAL、事务更新每日全站PV/UV、逐页PV、来源和去�
 
 主题提供三种主题模式、层级目录、代码换行/复制、公式/Mermaid、灯箱、移动端固定导航和持久公共布局。Swup只替换main，导航、分栏线和信息栏保持DOM；脚本按页面生命周期初始化，尊重减少动态效果。作者脚本页面和异常导航回到完整加载。
 
-发行包按白名单收集程序、默认config/content/templates/static/deploy/docs和许可证；个人内容、运行data、备份、源Logo及开发依赖不进入包。Actions测试后从实际压缩包解压验收；只有发布job有contents:write。升级在新目录迁移config/content/data，不覆盖用户输入。没有自动更新、后台CMS或多实例统计写入机制。
+发行包按白名单收集程序、默认config/content/templates/static/deploy/docs和许可证；个人内容、运行data、备份、源Logo及开发依赖不进入包。Actions测试后从实际压缩包解压验收；只有发布job有contents:write。程序升级停服并备份后在原安装位置替换程序及默认资源，保留config/content/data。没有自动更新、后台CMS或多实例统计写入机制。

@@ -57,9 +57,10 @@ tags:
 这里开始写正文。
 ```
 
-本文件位于 `docs/`，不会被当作文章生成。实际内容目录由 `config.yaml` 的
-`paths.content` 指定：项目示例为 `content/`，当前个人导入数据为
-`output/personal-preview/content/`。图片根路径对应各自的 `paths.static`。
+本文件位于 `docs/`，不会被当作文章生成。默认文章目录为 `content/posts/`，
+独立页面放在 `content/pages/`；如需改变内容根目录，使用 `config.yaml` 的
+`paths.content`。附件放在 `content/assets/`，例如 `content/assets/photo.png`
+在正文中写为 `/media/photo.png`。
 
 ## 全部文章元数据
 
