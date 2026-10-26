@@ -60,7 +60,7 @@ sudo journalctl -u blogo -f
 
 ## 从源码开发
 
-构建与测试使用 `go.mod` 的 `toolchain` 指定的 Go 1.27.3。CI 与发行构建读取同一版本；本地保持默认 `GOTOOLCHAIN=auto`，或安装该版本及后续安全补丁版。JavaScript 和导入工具测试另需 Node 与 Python；这些都不是发行包的运行依赖。
+构建与测试使用 Go 1.27.3，CI 与发行构建从 `go.mod` 的 `go` 指令读取同一版本。本地保持默认 `GOTOOLCHAIN=auto`，或安装该版本及后续安全补丁版。JavaScript 和导入工具测试另需 Node 与 Python；这些都不是发行包的运行依赖。
 
 ```sh
 go test ./...
