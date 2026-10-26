@@ -2,6 +2,7 @@ package content
 
 import (
 	"fmt"
+	"io/fs"
 	"path"
 	"regexp"
 	"strings"
@@ -101,11 +102,19 @@ func AliasURL(raw string) (string, error) {
 	if !strings.HasPrefix(raw, "/") {
 		return "", fmt.Errorf("alias must be a site-root path")
 	}
+	wildcard := strings.Contains(raw, "*")
+	if wildcard && (strings.Contains(raw, "**") || PrivatePath(strings.ReplaceAll(raw, "*", "x"))) {
+		return "", fmt.Errorf("invalid wildcard alias path %q", raw)
+	}
 	trimmed := strings.TrimSuffix(raw[1:], "/")
 	for _, part := range strings.Split(trimmed, "/") {
-		if !aliasSegment.MatchString(part) || part == "." || part == ".." {
+		literal := strings.ReplaceAll(part, "*", "x")
+		if !aliasSegment.MatchString(literal) || part == "." || part == ".." {
 			return "", fmt.Errorf("invalid alias path segment %q", part)
 		}
+	}
+	if wildcard {
+		return raw, nil
 	}
 	if strings.Contains(path.Base(trimmed), ".") {
 		if strings.HasSuffix(raw, "/") {
@@ -114,6 +123,25 @@ func AliasURL(raw string) (string, error) {
 		return raw, nil
 	}
 	return "/" + trimmed + "/", nil
+}
+
+// PrivatePath applies to public requests and wildcard source validation alike.
+func PrivatePath(value string) bool {
+	relative := strings.TrimPrefix(value, "/")
+	if !strings.HasPrefix(value, "/") || strings.ContainsAny(value, "\\\x00") || relative != "" && !fs.ValidPath(strings.TrimSuffix(relative, "/")) {
+		return true
+	}
+	for _, segment := range strings.Split(relative, "/") {
+		if strings.HasPrefix(segment, ".") {
+			return true
+		}
+	}
+	first := strings.ToLower(strings.SplitN(relative, "/", 2)[0])
+	switch first {
+	case "config.yaml", "content", "data", "meta", "statistics", "private", "templates", "static", "__blogo":
+		return true
+	}
+	return false
 }
 
 func OutputPath(canonical string) string { return strings.TrimPrefix(canonical, "/") + "index.html" }

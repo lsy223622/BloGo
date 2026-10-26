@@ -29,14 +29,14 @@ import (
 const reloadScript = `(() => {let revision;async function check(){try{const response=await fetch('/__blogo/revision',{cache:'no-store'});if(!response.ok)return;const data=await response.json();if(revision&&revision!==data.build_id)location.reload();revision=data.build_id;}catch(_) {}}check();setInterval(check,1000);})();`
 
 type httpSnapshot struct {
-	config      config.Config
-	published   *build.Result
-	files       map[string]bool
-	routes      map[string]string
-	records     map[string]site.PageRecord
-	proxies     []netip.Prefix
-	collector   http.Handler
-	legacyPosts map[string]string
+	config    config.Config
+	published *build.Result
+	files     map[string]bool
+	routes    map[string]string
+	records   map[string]site.PageRecord
+	proxies   []netip.Prefix
+	collector http.Handler
+	aliases   []string
 }
 type Handler struct {
 	mu      sync.RWMutex
@@ -105,18 +105,7 @@ func (h *Handler) Reconfigure(c *config.Config, published *build.Result, collect
 		state.routes[page.URL] = content.OutputPath(page.URL)
 		state.records[page.ID] = page
 	}
-	posts := map[string]bool{}
-	for _, page := range manifest.Pages {
-		if page.Kind == "post" {
-			posts[page.URL] = true
-		}
-	}
-	state.legacyPosts = map[string]string{}
-	for source, target := range result.Redirects {
-		if match := legacyPostAlias.FindStringSubmatch(source); match != nil && posts[target] {
-			state.legacyPosts[match[1]] = target
-		}
-	}
+	state.aliases = site.WildcardAliases(result.Redirects)
 	h.mu.Lock()
 	h.current = state
 	h.mu.Unlock()
@@ -130,27 +119,7 @@ func (h *Handler) Update(published *build.Result) error {
 	return h.Reconfigure(&c, published, collector)
 }
 
-func privatePath(value string) bool {
-	relative := strings.TrimPrefix(value, "/")
-	if !strings.HasPrefix(value, "/") || strings.ContainsAny(value, "\\\x00") || relative != "" && !fs.ValidPath(strings.TrimSuffix(relative, "/")) {
-		return true
-	}
-	for _, segment := range strings.Split(relative, "/") {
-		if strings.HasPrefix(segment, ".") {
-			return true
-		}
-	}
-	first := strings.ToLower(strings.SplitN(relative, "/", 2)[0])
-	switch first {
-	case "config.yaml", "content", "data", "meta", "statistics", "private", "templates", "static", "__blogo":
-		return true
-	}
-	return false
-}
-
 var immutableAsset = regexp.MustCompile(`^assets/[^/]+\.[a-f0-9]{16}\.(css|js)$`)
-var legacyPostAlias = regexp.MustCompile(`^/archives/([0-9]+)/?$`)
-var legacyCommentPage = regexp.MustCompile(`^/archives/([0-9]+)/comment-page-([1-9][0-9]*)/?$`)
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.mu.RLock()
@@ -193,7 +162,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		serveBytes(w, r, []byte(reloadScript), "application/javascript")
 		return
 	}
-	denied := privatePath(r.URL.Path)
+	denied := content.PrivatePath(r.URL.Path)
 	feedFile, feedType, isFeed := site.FeedRoute(r.URL.Path)
 	if !denied {
 		if target, ok := state.published.Redirects[r.URL.Path]; ok && !isFeed {
@@ -209,8 +178,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		file, known = feedFile, true
 	}
 	if !denied && !known && !state.files[strings.TrimPrefix(r.URL.Path, "/")] {
-		if match := legacyCommentPage.FindStringSubmatch(r.URL.Path); match != nil {
-			if target := state.legacyPosts[match[1]]; target != "" {
+		for _, pattern := range state.aliases {
+			if site.MatchWildcardAlias(pattern, r.URL.Path) {
+				target := state.published.Redirects[pattern]
 				if r.URL.RawQuery != "" {
 					target += "?" + r.URL.RawQuery
 				}

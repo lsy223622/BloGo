@@ -13,7 +13,7 @@ import (
 var pagination = regexp.MustCompile(`(?:^|/)page/[0-9]+(?:/|$)`)
 var archiveRoute = regexp.MustCompile(`^/archives/[0-9]{4}(?:/[0-9]{2})?/$`)
 
-func reserved(u string) bool {
+func ReservedRoute(u string) bool {
 	if strings.HasSuffix(u, "/index.html") {
 		u = strings.TrimSuffix(u, "index.html")
 	}
@@ -47,6 +47,7 @@ func ValidateRoutes(items []*content.ContentItem, staticFiles []string) error {
 	ids := map[string]string{}
 	routes := map[string]string{}
 	files := map[string]string{}
+	patterns := map[string]string{}
 	addFile := func(file, owner string) error {
 		for other, previous := range files {
 			if file == other || strings.HasPrefix(file, other+"/") || strings.HasPrefix(other, file+"/") {
@@ -62,7 +63,7 @@ func ValidateRoutes(items []*content.ContentItem, staticFiles []string) error {
 		}
 	}
 	addRoute := func(u, owner string) error {
-		if reserved(u) {
+		if ReservedRoute(u) {
 			return fmt.Errorf("%s: reserved route %s", owner, u)
 		}
 		key := strings.TrimSuffix(u, "/")
@@ -88,6 +89,19 @@ func ValidateRoutes(items []*content.ContentItem, staticFiles []string) error {
 			return err
 		}
 		for _, alias := range item.Aliases {
+			if strings.Contains(alias, "*") {
+				if ReservedRoute(alias) {
+					return fmt.Errorf("%s: reserved route %s", item.SourcePath, alias)
+				}
+				if _, err := content.AliasURL(alias); err != nil {
+					return fmt.Errorf("%s: %w", item.SourcePath, err)
+				}
+				if previous, ok := patterns[alias]; ok && previous != item.URL {
+					return fmt.Errorf("%s: wildcard alias %s conflicts with %s", item.SourcePath, alias, previous)
+				}
+				patterns[alias] = item.URL
+				continue
+			}
 			if err := addRoute(alias, item.SourcePath+" aliases"); err != nil {
 				return err
 			}
@@ -101,10 +115,10 @@ func ValidateRoutes(items []*content.ContentItem, staticFiles []string) error {
 		if strings.HasPrefix(u, "/api/") || strings.HasPrefix(u, "/data/") || u == "/api" || u == "/data" {
 			return fmt.Errorf("static %s: reserved service mapping", file)
 		}
-		if path.Base(u) == "index.html" && reserved(u) && !strings.HasPrefix(u, "/assets/") {
+		if path.Base(u) == "index.html" && ReservedRoute(u) && !strings.HasPrefix(u, "/assets/") {
 			return fmt.Errorf("static %s: reserved system route", file)
 		}
-		if !strings.HasPrefix(u, "/assets/") && (reserved(u+"/") || u == "/page" || strings.HasSuffix(u, "/page")) {
+		if !strings.HasPrefix(u, "/assets/") && (ReservedRoute(u+"/") || u == "/page" || strings.HasSuffix(u, "/page")) {
 			return fmt.Errorf("static %s: reserved output directory", file)
 		}
 		if err := addFile(file, "static "+file); err != nil {

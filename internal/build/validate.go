@@ -26,6 +26,7 @@ func validateOutput(public string, pages []*site.Page, origin string, strict boo
 	}
 	expected := map[string]bool{}
 	routes := map[string]bool{}
+	var patterns []string
 	for _, p := range pages {
 		file := content.OutputPath(p.URL)
 		expected[file] = true
@@ -36,6 +37,10 @@ func validateOutput(public string, pages []*site.Page, origin string, strict boo
 		}
 		if p.Content != nil {
 			for _, alias := range p.Content.Aliases {
+				if strings.Contains(alias, "*") {
+					patterns = append(patterns, alias)
+					continue
+				}
 				routes[alias] = true
 				routes[strings.TrimSuffix(alias, "/")] = true
 			}
@@ -98,6 +103,14 @@ func validateOutput(public string, pages []*site.Page, origin string, strict boo
 				name := strings.TrimPrefix(target.Path, "/")
 				_, isFile := files[name]
 				exists := isFile || routes[target.Path]
+				if !exists && link {
+					for _, pattern := range patterns {
+						if site.MatchWildcardAlias(pattern, target.Path) {
+							exists = true
+							break
+						}
+					}
+				}
 				if feedFile, _, ok := site.FeedRoute(target.Path); ok {
 					_, exists = files[feedFile]
 				}

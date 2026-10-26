@@ -98,6 +98,13 @@ func RedirectRules(pages []*Page) (map[string]string, error) {
 			if err != nil {
 				return nil, err
 			}
+			if strings.Contains(safe, "*") {
+				if target, exists := redirects[safe]; exists && target != p.URL {
+					return nil, fmt.Errorf("duplicate wildcard alias: %s", safe)
+				}
+				redirects[safe] = p.URL
+				continue
+			}
 			if err = add(safe, p.URL); err != nil {
 				return nil, err
 			}
@@ -121,6 +128,9 @@ func Redirects(pages []*Page) ([]byte, error) {
 	}
 	var b strings.Builder
 	for _, from := range keys(redirects) {
+		if strings.Contains(from, "*") {
+			continue
+		}
 		b.WriteString(strconv.Quote("~^" + regexp.QuoteMeta(from) + "$"))
 		b.WriteByte(' ')
 		b.WriteString(strconv.Quote(redirects[from]))
