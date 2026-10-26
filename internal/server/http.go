@@ -165,7 +165,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	denied := content.PrivatePath(r.URL.Path)
 	feedFile, feedType, isFeed := site.FeedRoute(r.URL.Path)
 	if !denied {
-		if target, ok := state.published.Redirects[r.URL.Path]; ok && !isFeed {
+		if target, ok := state.published.Redirects[r.URL.Path]; ok && !isFeed && !strings.Contains(r.URL.Path, "*") {
 			if r.URL.RawQuery != "" {
 				target += "?" + r.URL.RawQuery
 			}

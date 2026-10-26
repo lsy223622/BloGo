@@ -21,6 +21,8 @@ func TestWildcardAliasesFollowSnapshotAndExactRoutes(t *testing.T) {
 	published.Redirects["/*/*"] = "/about/"
 	published.Redirects["/choice/a*"] = "/posts/welcome/"
 	published.Redirects["/choice/*z"] = "/posts/first-steps/"
+	published.Redirects["/old/a*"] = "/posts/welcome/"
+	published.Redirects["/old/*a*"] = "/posts/first-steps/"
 	if err := h.Update(published); err != nil {
 		t.Fatal(err)
 	}
@@ -35,6 +37,8 @@ func TestWildcardAliasesFollowSnapshotAndExactRoutes(t *testing.T) {
 		{"/legacy/example/replies-special", 301, "/posts/first-steps/"},
 		{"/legacy/example/replies-exact", 301, "/about/"},
 		{"/choice/az", 301, "/posts/first-steps/"},
+		{"/old/a*", 301, "/posts/first-steps/"},
+		{"/old/a%2A", 301, "/posts/first-steps/"},
 		{"/legacy/example/replies-1/", 404, ""},
 		{"/legacy/example/replies-1/more", 404, ""},
 		{"/old/sample/entry-/", 301, "/posts/welcome/"},
