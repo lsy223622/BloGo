@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/lsy223622/BloGo/internal/content"
-	"github.com/lsy223622/BloGo/internal/markdown"
 )
 
 func ApplyNavigation(pages []*Page, index *SiteIndex) {
@@ -33,50 +32,6 @@ func ApplyNavigation(pages []*Page, index *SiteIndex) {
 			p.Next = index.PublicPosts[n-1]
 		}
 	}
-}
-
-type rssItem struct {
-	Title       string  `xml:"title"`
-	Link        string  `xml:"link"`
-	GUID        rssGUID `xml:"guid"`
-	Date        string  `xml:"pubDate"`
-	Description string  `xml:"description"`
-}
-type rssGUID struct {
-	PermaLink bool   `xml:"isPermaLink,attr"`
-	ID        string `xml:",chardata"`
-}
-type rssChannel struct {
-	Title       string    `xml:"title"`
-	Link        string    `xml:"link"`
-	Description string    `xml:"description"`
-	Items       []rssItem `xml:"item"`
-}
-type rssDocument struct {
-	XMLName xml.Name   `xml:"rss"`
-	Version string     `xml:"version,attr"`
-	Channel rssChannel `xml:"channel"`
-}
-
-func Feed(index *SiteIndex, baseURL, title string, maxSummary int) ([]byte, error) {
-	baseURL = strings.TrimRight(baseURL, "/")
-	doc := rssDocument{Version: "2.0", Channel: rssChannel{Title: title, Link: baseURL + "/", Description: title}}
-	for _, item := range index.PublicPosts {
-		if item.Published == nil {
-			return nil, fmt.Errorf("%s: public post lacks publication date", item.ID)
-		}
-		summary := item.Meta.Summary
-		if item.Format == content.Markdown {
-			result, err := markdown.Convert(item.Body, summary, maxSummary)
-			if err != nil {
-				return nil, err
-			}
-			summary = result.Summary
-		}
-		doc.Channel.Items = append(doc.Channel.Items, rssItem{Title: item.Meta.Title, Link: baseURL + item.URL, GUID: rssGUID{ID: item.ID}, Date: item.Published.Format(time.RFC1123Z), Description: summary})
-	}
-	data, err := xml.MarshalIndent(doc, "", "  ")
-	return append([]byte(xml.Header), data...), err
 }
 
 type sitemapURL struct {

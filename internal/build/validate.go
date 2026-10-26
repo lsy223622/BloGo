@@ -93,6 +93,9 @@ func validateOutput(public string, pages []*site.Page, origin string, strict boo
 				name := strings.TrimPrefix(target.Path, "/")
 				_, isFile := files[name]
 				exists := isFile || routes[target.Path]
+				if feedFile, _, ok := site.FeedRoute(target.Path); ok {
+					_, exists = files[feedFile]
+				}
 				if !exists {
 					message := fmt.Sprintf("%s: missing %s", file, raw)
 					if resource || strict {

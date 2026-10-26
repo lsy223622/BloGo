@@ -17,6 +17,12 @@ func reserved(u string) bool {
 	if strings.HasSuffix(u, "/index.html") {
 		u = strings.TrimSuffix(u, "index.html")
 	}
+	if _, _, ok := FeedRoute(u); ok {
+		return true
+	}
+	if u == "/feed/rss/index.xml" || u == "/feed/atom/index.xml" {
+		return true
+	}
 	for _, prefix := range []string{"/api/", "/data/", "/assets/"} {
 		if u == strings.TrimSuffix(prefix, "/") || strings.HasPrefix(u, prefix) {
 			return true
@@ -50,7 +56,7 @@ func ValidateRoutes(items []*content.ContentItem, staticFiles []string) error {
 		files[file] = owner
 		return nil
 	}
-	for _, file := range []string{"index.html", "tags/index.html", "archives/index.html", "updates/index.html", "404/index.html", "rss.xml", "sitemap.xml", "robots.txt"} {
+	for _, file := range []string{"index.html", "tags/index.html", "archives/index.html", "updates/index.html", "404/index.html", "rss.xml", "feed/rss/index.xml", "feed/atom/index.xml", "sitemap.xml", "robots.txt"} {
 		if err := addFile(file, "system route"); err != nil {
 			return err
 		}

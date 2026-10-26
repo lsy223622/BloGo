@@ -127,7 +127,7 @@ func buildSite(c *config.Config, output string, preview bool, fingerprint string
 	if err = manifest.Validate(preview); err != nil {
 		return nil, invalid(err)
 	}
-	feed, err := site.Feed(index, model.Site.BaseURL, model.Site.Title, model.Build.SummaryMaxChars)
+	feeds, err := site.Feeds(index, model.Site.BaseURL, model.Site.Title, model.Build.SummaryMaxChars)
 	if err != nil {
 		return nil, invalid(err)
 	}
@@ -150,7 +150,7 @@ func buildSite(c *config.Config, output string, preview bool, fingerprint string
 	for _, file := range []struct {
 		name string
 		data []byte
-	}{{"public/rss.xml", feed}, {"public/sitemap.xml", sitemap}, {"public/robots.txt", site.Robots(model.Site.BaseURL)}, {"meta/redirects.conf", redirects}, {"meta/redirects.json", rulesJSON}, {"meta/fingerprint", []byte(fingerprint + "\n")}} {
+	}{{"public/rss.xml", feeds.RSS2}, {"public/feed/rss/index.xml", feeds.RDF}, {"public/feed/atom/index.xml", feeds.Atom}, {"public/sitemap.xml", sitemap}, {"public/robots.txt", site.Robots(model.Site.BaseURL)}, {"meta/redirects.conf", redirects}, {"meta/redirects.json", rulesJSON}, {"meta/fingerprint", []byte(fingerprint + "\n")}} {
 		if err = writeFile(stage, file.name, file.data); err != nil {
 			return nil, err
 		}

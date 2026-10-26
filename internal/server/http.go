@@ -194,8 +194,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	denied := privatePath(r.URL.Path)
+	feedFile, feedType, isFeed := site.FeedRoute(r.URL.Path)
 	if !denied {
-		if target, ok := state.published.Redirects[r.URL.Path]; ok {
+		if target, ok := state.published.Redirects[r.URL.Path]; ok && !isFeed {
 			if r.URL.RawQuery != "" {
 				target += "?" + r.URL.RawQuery
 			}
@@ -204,6 +205,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	file, known := state.routes[r.URL.Path]
+	if isFeed {
+		file, known = feedFile, true
+	}
 	if !denied && !known && !state.files[strings.TrimPrefix(r.URL.Path, "/")] {
 		if match := legacyCommentPage.FindStringSubmatch(r.URL.Path); match != nil {
 			if target := state.legacyPosts[match[1]]; target != "" {
@@ -263,6 +267,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
+	} else if isFeed {
+		w.Header().Set("Content-Type", feedType)
 	} else if kind := mime.TypeByExtension(path.Ext(file)); kind != "" {
 		w.Header().Set("Content-Type", kind)
 	}
