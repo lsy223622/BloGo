@@ -1,6 +1,6 @@
 # 搜索抓取、旧地址兼容与全文订阅优化
 
-日期：2026-10-26。状态：用户已在讨论会话批准以下方案，并要求交给现有开发会话完成实现及验证。
+日期：2026-10-26。状态：用户批准的A—D已完成本地实现、回归与实际包验收；独立审查发现的响应式图片问题已修复。
 
 ## 目标与边界
 
@@ -127,36 +127,36 @@ Swup 导航后应同步 title、OG/description、canonical、分页标题和结�
 
 参考文件：`internal/site/seo.go`、`internal/server/http.go`、对应 `seo_test.go` / `http_test.go`。
 
-- [ ] 核对当前快照、aliases 与精确路由优先级，增加受限兼容。
-- [ ] 回归覆盖：已知旧 ID、多页码、两种尾斜杠、查询字符串、直接最终 Location；未知 ID/非法后缀保持 404；精确路由不被覆盖；快照更新后映射更新。
+- [x] 核对当前快照、aliases 与精确路由优先级，增加受限兼容。
+- [x] 回归覆盖：已知旧 ID、多页码、两种尾斜杠、查询字符串、直接最终 Location；未知 ID/非法后缀保持 404；精确路由不被覆盖；快照更新后映射更新。
 
 ### B. 三种全文 feed 与静态入口
 
 参考文件：`internal/site/seo.go`（必要时拆出小型 feed 文件）、`internal/build/build.go`、`internal/site/routes.go`、`internal/server/http.go` 及对应测试。
 
-- [ ] 用同一公开文章集合生成 RSS 2.0、RSS 1.0、Atom，接入构建结果与 HTTP 入口。
-- [ ] 覆盖 XML 格式结构、全文/摘要、GUID 保持、绝对 URL、中文/emoji/XML 特殊字符及可见性排除。
-- [ ] HTTP 回归验证四个入口直接 200、正确 Content-Type、GET/HEAD 和 `/feed/` 与 `/rss.xml` 正文相同；冲突配置不得覆盖用户文件。
+- [x] 用同一公开文章集合生成 RSS 2.0、RSS 1.0、Atom，接入构建结果与 HTTP 入口。
+- [x] 覆盖 XML 格式结构、全文/摘要、GUID 保持、绝对 URL、中文/emoji/XML 特殊字符及可见性排除。
+- [x] HTTP 回归验证四个入口直接 200、正确 Content-Type、GET/HEAD 和 `/feed/` 与 `/rss.xml` 正文相同；冲突配置不得覆盖用户文件。
 
 ### C. 页面元数据、分页与 JSON-LD
 
 参考文件：`internal/render/render.go`、`templates/page.html`、`static/assets/theme.css`、`static/assets/navigation.js`、`internal/render/render_test.go`，按需在现有 Node 测试约定中加聚焦导航回归。
 
-- [ ] 自动生成首页/文章/分类标签/分页元数据，增加页码显示与公开文章 JSON-LD。
-- [ ] 检查普通与窄屏分页标题，第一页/第二页/单页状态；保留整体主题风格。
-- [ ] 测试初始 HTML、正确 JSON 解析、真实日期和绝对地址；特殊字符和 `</script>` 不破坏 head。
-- [ ] 验证列表→文章→另一文章→列表导航的数据更新，不能残留旧 JSON-LD、OG、title 或 canonical。
-- [ ] 不修改任何既有博文的标题层级、目录或正文。
+- [x] 自动生成首页/文章/分类标签/分页元数据，增加页码显示与公开文章 JSON-LD。
+- [x] 检查普通与窄屏分页标题，第一页/第二页/单页状态；保留整体主题风格。
+- [x] 测试初始 HTML、正确 JSON 解析、真实日期和绝对地址；特殊字符和 `</script>` 不破坏 head。
+- [x] 验证列表→文章→另一文章→列表导航的数据更新，不能残留旧 JSON-LD、OG、title 或 canonical。
+- [x] 不修改任何既有博文的标题层级、目录或正文。
 
 ### D. 文档、整体回归与交付
 
 参考文件：`docs/content-output.md`、`docs/theme.md`、`docs/configuration.md`，必要时更新现有示例说明；避免在每份文档重复完整设计。
 
-- [ ] 文档准确说明 feed 格式、全文默认行为和元数据来源，主入口仍为 rss.xml。
-- [ ] 保持 Go 1.27.3 或当前更高稳定补丁版的既有工具链要求与依赖锁定；不升级无关依赖。
-- [ ] 执行现有 Go test/vet、Node 浏览器脚本测试、Python import-preview/package-release 单元测试；对本次改动增加有意义的回归用例。
-- [ ] Windows 本机与可用 Linux 环境进行构建及共享 Handler/发行包验证。未实际执行的平台或检查明确列出，不用交叉编译冒充原生执行。
-- [ ] 使用本地构建产物验收四个 feed 入口、迁移跳转及页面导航；保留原有统计、静态资源和配置行为。
-- [ ] 复查 diff，提供完成清单、验证命令/结果、可审查提交或分支、剩余限制。可以本地提交；不推送、合并、发布或部署。
+- [x] 文档准确说明 feed 格式、全文默认行为和元数据来源，主入口仍为 rss.xml。
+- [x] 保持 Go 1.27.3 或当前更高稳定补丁版的既有工具链要求与依赖锁定；不升级无关依赖。
+- [x] 执行现有 Go test/vet、Node 浏览器脚本测试、Python import-preview/package-release 单元测试；对本次改动增加有意义的回归用例。
+- [x] Windows 本机与可用 Linux 环境进行构建及共享 Handler/发行包验证。未实际执行的平台或检查明确列出，不用交叉编译冒充原生执行。
+- [x] 使用本地构建产物验收四个 feed 入口、迁移跳转及页面导航；保留原有统计、静态资源和配置行为。
+- [x] 复查 diff，提供完成清单、验证命令/结果、可审查提交或分支、剩余限制。可以本地提交；不推送、合并、发布或部署。
 
 本轮线上只读证据位于本地忽略目录 `output/crawl-audit-20261026/REPORT.md` 及相邻 JSON/HTTP 响应，供参考；这些证据不是公开打包内容。所有实施判断以当前源码为准。
