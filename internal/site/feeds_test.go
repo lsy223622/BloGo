@@ -2,6 +2,7 @@ package site
 
 import (
 	"encoding/xml"
+	"golang.org/x/net/html"
 	"net/url"
 	"strings"
 	"testing"
@@ -159,5 +160,49 @@ func TestEmptyFeedsRemainValid(t *testing.T) {
 	atom := parseFeed(t, feeds.Atom)
 	if _, err = time.Parse(time.RFC3339, atom.one(t, testAtom, "updated").Text); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestFullFeedsResolveResponsiveImageCandidates(t *testing.T) {
+	date := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
+	post := indexedItem("demo", content.Post, content.Public, &date, nil)
+	post.URL = "/posts/demo/"
+	post.Body = `<picture><source srcset="../../media/wide.png 2x, /media/narrow.png 1x"><img src="../../media/fallback.png" srcset="data:image/png;base64,AAAA 1x, https://cdn.test/a,b.png 2x, ../large.png 3x"></picture><img srcset="one.png, /media/two.png 2x">`
+	feeds, err := Feeds(&SiteIndex{PublicPosts: []*content.ContentItem{post}}, "https://example.test", "Test", 160)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bodies := []string{
+		parseFeed(t, feeds.RSS2).one(t, "", "channel").one(t, "", "item").one(t, testContent, "encoded").Text,
+		parseFeed(t, feeds.RDF).one(t, testRSS, "item").one(t, testContent, "encoded").Text,
+		parseFeed(t, feeds.Atom).one(t, testAtom, "entry").one(t, testAtom, "content").Text,
+	}
+	expected := []string{"https://example.test/media/wide.png 2x, https://example.test/media/narrow.png 1x", "data:image/png;base64,AAAA 1x, https://cdn.test/a,b.png 2x, https://example.test/posts/large.png 3x", "https://example.test/posts/demo/one.png, https://example.test/media/two.png 2x"}
+	for _, body := range bodies {
+		document, e := html.Parse(strings.NewReader(body))
+		if e != nil {
+			t.Fatal(e)
+		}
+		var values []string
+		var walk func(*html.Node)
+		walk = func(node *html.Node) {
+			for _, attribute := range node.Attr {
+				if attribute.Key == "srcset" {
+					values = append(values, attribute.Val)
+				}
+			}
+			for child := node.FirstChild; child != nil; child = child.NextSibling {
+				walk(child)
+			}
+		}
+		walk(document)
+		if len(values) != len(expected) {
+			t.Fatal("missing responsive image sources", values)
+		}
+		for i, value := range expected {
+			if values[i] != value {
+				t.Fatalf("candidate %d: %q; expected %q", i, values[i], value)
+			}
+		}
 	}
 }

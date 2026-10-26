@@ -195,6 +195,8 @@ func absoluteFeedBody(body, articleURL string) (string, error) {
 	visit = func(node *html.Node) {
 		for i, attribute := range node.Attr {
 			switch attribute.Key {
+			case "srcset":
+				node.Attr[i].Val = absoluteSrcset(attribute.Val, base)
 			case "href", "src", "poster", "cite":
 				reference, err := url.Parse(attribute.Val)
 				if err == nil {
@@ -214,6 +216,58 @@ func absoluteFeedBody(body, articleURL string) (string, error) {
 		}
 	}
 	return output.String(), nil
+}
+
+func absoluteSrcset(value string, base *url.URL) string {
+	space := func(c byte) bool { return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' }
+	var output strings.Builder
+	for position := 0; position < len(value); {
+		start := position
+		for position < len(value) && (space(value[position]) || value[position] == ',') {
+			position++
+		}
+		output.WriteString(value[start:position])
+		if position == len(value) {
+			break
+		}
+		start = position
+		// Srcset URL tokens end at HTML whitespace, not at embedded commas.
+		// Trailing commas terminate a candidate; data-URL commas remain intact.
+		for position < len(value) && !space(value[position]) {
+			position++
+		}
+		end := position
+		for end > start && value[end-1] == ',' {
+			end--
+		}
+		raw := value[start:end]
+		if reference, err := url.Parse(raw); err == nil && !reference.IsAbs() {
+			output.WriteString(base.ResolveReference(reference).String())
+		} else {
+			output.WriteString(raw)
+		}
+		output.WriteString(value[end:position])
+		if end != position {
+			continue
+		}
+		// Keep descriptors verbatim, including parenthesized parsing-error text.
+		start = position
+		parentheses := 0
+		for position < len(value) {
+			c := value[position]
+			position++
+			if c == '(' {
+				parentheses++
+			} else if c == ')' && parentheses > 0 {
+				parentheses--
+			}
+			if c == ',' && parentheses == 0 {
+				break
+			}
+		}
+		output.WriteString(value[start:position])
+	}
+	return output.String()
 }
 
 // FeedRoute maps only the three fixed legacy entrances and the primary feed.
