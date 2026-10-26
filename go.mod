@@ -2,6 +2,8 @@ module github.com/lsy223622/BloGo
 
 go 1.27.0
 
+toolchain go1.27.3
+
 require (
 	github.com/alecthomas/chroma/v2 v2.27.0
 	github.com/medama-io/go-useragent v1.2.3
