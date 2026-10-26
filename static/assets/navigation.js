@@ -4,7 +4,7 @@
   if (!main || main.querySelector('script') || !window.Swup || !window.SwupScrollPlugin || !window.BloGoPage) return;
   if (!window.fetch || !window.DOMParser || !window.history?.pushState || !window.history?.replaceState) return;
 
-  const metadata = 'meta[name="description"],meta[name="robots"],meta[property],link[rel="canonical"]';
+  const metadata = 'meta[name="description"],meta[name="robots"],meta[property],link[rel="canonical"],script[type="application/ld+json"][data-blogo-schema]';
   const runtime = doc => [...doc.querySelectorAll('[data-blogo-runtime]')].map(el => el.getAttribute('src') || el.getAttribute('href')).join('\n');
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
   let swup;

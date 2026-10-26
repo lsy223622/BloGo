@@ -43,6 +43,7 @@ func TestOrdinaryLayoutsEscapeMetadataAndPreserveTrustedBody(t *testing.T) {
 			continue
 		}
 		p.Title = `<script>alert("x")</script>`
+		c.Site.Title = p.Title
 		out, err := r.Render(p)
 		if err != nil {
 			t.Fatal(err)

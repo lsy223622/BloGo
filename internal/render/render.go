@@ -28,19 +28,21 @@ type Renderer struct {
 	assets    map[string]string
 }
 type view struct {
-	Site               config.Site
-	Extra              map[string]any
-	Page               *site.Page
-	Body               template.HTML
-	Summary, Canonical string
-	TOC                []markdown.Heading
-	Categories, Tags   []site.Term
-	Recent             []*content.ContentItem
-	Assets             map[string]string
-	AboutURL, LinksURL string
-	Mermaid            bool
-	Logo, Favicon      string
-	StatsEnabled       bool
+	Site                                  config.Site
+	Extra                                 map[string]any
+	Page                                  *site.Page
+	Body                                  template.HTML
+	Summary, Canonical                    string
+	TOC                                   []markdown.Heading
+	Categories, Tags                      []site.Term
+	Recent                                []*content.ContentItem
+	Assets                                map[string]string
+	AboutURL, LinksURL                    string
+	Mermaid                               bool
+	Logo, Favicon                         string
+	StatsEnabled                          bool
+	DocumentTitle, MetaTitle, Description string
+	StructuredData                        template.JS
 }
 
 func New(c *config.Config, pages []*site.Page, tax *content.Taxonomies, assets map[string]string) (*Renderer, error) {
@@ -151,6 +153,9 @@ func (r *Renderer) Render(p *site.Page) ([]byte, error) {
 		v.Summary = body.Summary
 		v.TOC = body.TOC
 		v.Mermaid = body.Mermaid
+	}
+	if err := r.metadata(&v); err != nil {
+		return nil, err
 	}
 	for _, page := range r.pages {
 		if page.ID == "page:about" && page.Visibility == content.Public {
