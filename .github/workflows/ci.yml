@@ -21,5 +21,5 @@ jobs:
       - run: go version
       - run: go test ./...
       - run: go vet ./...
-      - run: node --test scripts/counts-browser.test.cjs scripts/stats-browser.test.cjs scripts/theme-browser.test.cjs
+      - run: node --test scripts/counts-browser.test.cjs scripts/stats-browser.test.cjs scripts/theme-browser.test.cjs scripts/navigation-browser.test.cjs
       - run: python -m unittest discover -s scripts -p test_*.py

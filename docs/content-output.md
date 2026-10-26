@@ -17,3 +17,15 @@
 当前发布的重定向数据覆盖无尾斜杠、`index.html` 和历史 aliases；目标只能为内容的当前规范 URL。Go HTTP服务返回301并保留query，构建成功后规则随发布生效。
 
 用户附件位于 `content/assets/`，映射到 `/media/`；展示信息、分类与标签统一定义于 `content/site.yaml`。页面扫描只读取 posts/pages，附件与站点设置分别校验并纳入一致的构建快照。
+
+## 站点订阅
+
+默认生成全文，保留摘要。`/rss.xml` 与 `/feed/` 是相同的RSS2；`/feed/rss/` 是RSS1/RDF，`/feed/atom/` 是Atom1。四个地址均直接返回200，媒体类型分别是application/rss+xml、application/rdf+xml、application/atom+xml，使用UTF-8。页面发现链接和页脚使用/rss.xml。
+
+RSS2的description保存摘要，content:encoded保存完整HTML；RDF使用相应全文扩展，Atom提供text摘要和HTML内容。三种格式复用公开文章的顺序和正文转换，排除独立页面、Draft、Unlisted及构建时发布日期尚在未来的文章。RSS2 GUID继续使用原稳定ID；Atom和RDF条目标识由站点origin及稳定ID组成，修改slug不会更换身份。
+
+正文只包含文章内容，链接和图片地址按文章URL解析为绝对地址。全文不注入主题外壳、统计或开发重载脚本；依赖JavaScript的图表保留可读源码。阅读器阅读不补记站内访问事件。文章更新时间取实际内容日期，缺省时Atom条目使用发布日期；没有文章的Atom feed以生成时间填写其必需的feed级updated。
+
+## 已知旧评论分页
+
+已有旧文章alias `/archives/数字/` 时，对完整匹配的`/archives/数字/comment-page-正整数`（可带尾斜杠）直接301到该文章最终规范地址并保留查询字符串。规则随发布快照更新，正常页面、静态文件和显式alias优先。页码不核对历史是否存在；未知文章、0、非数字或额外后缀保持原404行为。

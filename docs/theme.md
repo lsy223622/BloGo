@@ -55,3 +55,11 @@ Mermaid 的浏览器包和 MIT 许可位于 `static/vendor/mermaid-12.2.0/`，�
 作者 HTML 片段、Standalone、内联脚本与样式不参与压缩或路径字符串替换。静态输入仅接受常用图片、CSS/JS、字体、媒体、PDF、JSON/XML/TXT 及 LICENSE 文件；符号链接、特殊文件和静态 HTML 不进入附件输出，HTML 页面由内容模型统一建立身份。
 
 普通模板的 HTML 外壳在执行模板之前压缩，识别 Go 模板分隔符并保留文档结构；不注册嵌入式 JS/CSS 压缩器。作者正文在此后插入，因此正文和内联脚本/样式不被外壳压缩改写。
+
+## 自动页面元数据
+
+首页HTML/OG标题取site.yaml的title，简介取subtitle。文章使用自身标题和已有摘要；分类、标签标题带栏目上下文，并优先使用已配置描述。总页数大于1时，包括第一页，列表标题右侧显示弱化小字“第N / M页”，窄屏可换行；HTML title和OG标题另含当前页码，canonical指向当前页，底部翻页导航保持不变。
+
+普通模板的公开文章在初始head输出BlogPosting JSON-LD，使用实际标题、规范URL、发布日期和已有摘要。只有明确更新日期时提供dateModified，有extra.cover时提供绝对图片地址，不编造作者或拿Logo充当配图。JSON经安全编码后插入，作者文本中的`</script>`不能提前闭合标签。Standalone仍由作者控制。
+
+Swup同时替换title、canonical、OG/description和标有data-blogo-schema的结构化数据；从文章切到列表会移除上一篇BlogPosting。没有新增逐篇SEO配置字段。

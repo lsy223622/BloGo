@@ -19,6 +19,11 @@ func validateOutput(public string, pages []*site.Page, origin string, strict boo
 	if err != nil {
 		return nil, err
 	}
+	for _, feed := range []string{"rss.xml", "feed/rss/index.xml", "feed/atom/index.xml"} {
+		if _, ok := files[feed]; !ok {
+			return nil, fmt.Errorf("missing feed output %s", feed)
+		}
+	}
 	expected := map[string]bool{}
 	routes := map[string]bool{}
 	for _, p := range pages {
