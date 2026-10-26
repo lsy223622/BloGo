@@ -29,13 +29,14 @@ import (
 const reloadScript = `(() => {let revision;async function check(){try{const response=await fetch('/__blogo/revision',{cache:'no-store'});if(!response.ok)return;const data=await response.json();if(revision&&revision!==data.build_id)location.reload();revision=data.build_id;}catch(_) {}}check();setInterval(check,1000);})();`
 
 type httpSnapshot struct {
-	config    config.Config
-	published *build.Result
-	files     map[string]bool
-	routes    map[string]string
-	records   map[string]site.PageRecord
-	proxies   []netip.Prefix
-	collector http.Handler
+	config      config.Config
+	published   *build.Result
+	files       map[string]bool
+	routes      map[string]string
+	records     map[string]site.PageRecord
+	proxies     []netip.Prefix
+	collector   http.Handler
+	legacyPosts map[string]string
 }
 type Handler struct {
 	mu      sync.RWMutex
@@ -104,6 +105,18 @@ func (h *Handler) Reconfigure(c *config.Config, published *build.Result, collect
 		state.routes[page.URL] = content.OutputPath(page.URL)
 		state.records[page.ID] = page
 	}
+	posts := map[string]bool{}
+	for _, page := range manifest.Pages {
+		if page.Kind == "post" {
+			posts[page.URL] = true
+		}
+	}
+	state.legacyPosts = map[string]string{}
+	for source, target := range result.Redirects {
+		if match := legacyPostAlias.FindStringSubmatch(source); match != nil && posts[target] {
+			state.legacyPosts[match[1]] = target
+		}
+	}
 	h.mu.Lock()
 	h.current = state
 	h.mu.Unlock()
@@ -136,6 +149,8 @@ func privatePath(value string) bool {
 }
 
 var immutableAsset = regexp.MustCompile(`^assets/[^/]+\.[a-f0-9]{16}\.(css|js)$`)
+var legacyPostAlias = regexp.MustCompile(`^/archives/([0-9]+)/?$`)
+var legacyCommentPage = regexp.MustCompile(`^/archives/([0-9]+)/comment-page-([1-9][0-9]*)/?$`)
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.mu.RLock()
@@ -189,6 +204,17 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	file, known := state.routes[r.URL.Path]
+	if !denied && !known && !state.files[strings.TrimPrefix(r.URL.Path, "/")] {
+		if match := legacyCommentPage.FindStringSubmatch(r.URL.Path); match != nil {
+			if target := state.legacyPosts[match[1]]; target != "" {
+				if r.URL.RawQuery != "" {
+					target += "?" + r.URL.RawQuery
+				}
+				http.Redirect(w, r, target, http.StatusMovedPermanently)
+				return
+			}
+		}
+	}
 	status := 200
 	if denied {
 		known = false
