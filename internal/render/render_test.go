@@ -348,3 +348,43 @@ func TestTemplateShellCompactionPreservesAuthorCodeAndBody(t *testing.T) {
 		t.Fatalf("author source changed: %s", s)
 	}
 }
+
+func TestFormulaAssetsAreAdvertisedOnlyByFormulaContent(t *testing.T) {
+	c, err := config.Load("../../config.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name string
+		body string
+		want bool
+	}{
+		{"inline", "公式 " + string(rune(36)) + "x^2" + string(rune(36)) + "。", true},
+		{"block", "\x24\x24\nx^2\n\x24\x24", true},
+		{"html", "<span class='example math-inline'>\x24x\x24</span>", true},
+		{"code", "<code>&lt;span class=\"math-inline\"&gt;</code>", false},
+		{"plain", "普通文章。", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			item := &content.ContentItem{ID: "post:formula", Format: content.Markdown, Body: tc.body}
+			p := &site.Page{ID: item.ID, URL: "/posts/formula/", Content: item}
+			r, err := New(c, []*site.Page{p}, &content.Taxonomies{}, map[string]string{"katex.css": "/vendor/katex.css", "katex.js": "/vendor/katex.js"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			out, err := r.Render(p)
+			if err != nil {
+				t.Fatal(err)
+			}
+			html := string(out)
+			for _, asset := range []string{"data-katex-css=\"/vendor/katex.css\"", "data-katex-js=\"/vendor/katex.js\""} {
+				if strings.Contains(html, asset) != tc.want {
+					t.Errorf("asset declaration %q presence should be %t", asset, tc.want)
+				}
+			}
+			if strings.Contains(html, "href=\"/vendor/katex.css\"") || strings.Contains(html, "src=\"/vendor/katex.js\"") {
+				t.Error("formula resources should be requested by the page initializer")
+			}
+		})
+	}
+}

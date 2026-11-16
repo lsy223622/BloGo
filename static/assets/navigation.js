@@ -30,6 +30,13 @@
   swup.hooks.before('link:anchor', visit => {
     visit.scroll.animate = !motion.matches;
   });
+  const focusAnchor = hash => {
+    const target = swup.getAnchorElement(hash);
+    if (!(target instanceof HTMLElement) || !target.closest('#main')) return;
+    if (target.tabIndex < 0 && !target.hasAttribute('tabindex')) target.tabIndex = -1;
+    target.focus({preventScroll:true});
+  };
+  swup.hooks.on('link:anchor', (_, {hash}) => focusAnchor(hash));
   swup.hooks.replace('scroll:top', visit => {
     document.querySelectorAll('[data-swup-scroll-container]').forEach(container => {
       swup.scrollTo({top:0,left:0},visit.scroll.animate && !motion.matches,container);
@@ -70,7 +77,8 @@
   });
   swup.hooks.on('page:view', visit => {
     const main = document.querySelector('#main');
-    if (!visit.to.hash) main.focus({preventScroll:true});
+    if (visit.to.hash) focusAnchor(visit.to.hash);
+    else main.focus({preventScroll:true});
     if (main.dataset.statsSrc) {
       const script = document.createElement('script');
       script.src = main.dataset.statsSrc;

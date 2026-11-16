@@ -42,7 +42,7 @@
   document.addEventListener('contextmenu', event => {
     if (root.dataset.input === 'touch' && event.target.closest('.icon-button')) event.preventDefault();
   });
-  let diagrams = [], activeMain, mermaidLoading;
+  let diagrams = [], activeMain, mermaidLoading, katexLoading;
   let drawing = Promise.resolve(), diagramID = 0;
   const renderDiagrams = () => {
     drawing = drawing.then(async () => {
@@ -62,6 +62,43 @@
       }
     });
     return drawing;
+  };
+  const loadKaTeX = (css, src) => {
+    if (!katexLoading) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = css;
+      const script = document.createElement('script');
+      script.src = src;
+      const load = node => new Promise((resolve, reject) => {
+        node.onload = resolve;
+        node.onerror = reject;
+        document.head.append(node);
+      });
+      katexLoading = Promise.all([load(link), load(script)]).then(() => true, () => {
+        link.remove();
+        script.remove();
+        katexLoading = null;
+        return false;
+      });
+    }
+    return katexLoading;
+  };
+  const renderMath = async main => {
+    const {katexCss, katexJs} = main.dataset;
+    if (!katexCss || !katexJs) return;
+    const formulas = main.querySelectorAll('.math-inline,.math-block');
+    if (!formulas.length) return;
+    if (!await loadKaTeX(katexCss, katexJs) || main !== activeMain || !window.katex) return;
+    for (const node of formulas) {
+      const block = node.classList.contains('math-block');
+      const delimiter = block ? 2 : 1;
+      const fallback = node.textContent;
+      const source = fallback.trim().slice(delimiter, -delimiter).trim();
+      try {
+        window.katex.render(source, node, {displayMode: block, throwOnError: false, trust: false});
+      } catch (_) { node.textContent = fallback; }
+    }
   };
   let preference;
   try { preference = localStorage.getItem("blogo-theme"); } catch (_) {}
@@ -151,30 +188,30 @@
       });
       frame.append(tools);
     });
-    if (window.katex) {
-      main.querySelectorAll(".math-inline,.math-block").forEach((node) => {
-        const block = node.classList.contains("math-block");
-        const delimiter = block ? 2 : 1;
-        const source = node.textContent.trim().slice(delimiter, -delimiter).trim();
-        try { window.katex.render(source, node, {displayMode: block, throwOnError: false, trust: false}); } catch (_) {}
-      });
-    }
+    renderMath(main);
     main.querySelectorAll(".prose img").forEach((image) => {
       if (image.closest("a")) return;
       image.tabIndex = 0;
       image.setAttribute("role", "button");
-      image.setAttribute("aria-label", "放大图片：" + image.alt);
+      image.setAttribute("aria-label", image.alt ? "放大图片：" + image.alt : "放大图片");
       const open = async () => {
         if (!image.naturalWidth || document.querySelector('.lightbox')) return;
         const dialog = document.createElement("dialog");
         dialog.className = "lightbox";
+        dialog.setAttribute("aria-label", "图片预览");
         const close = document.createElement("button");
-        close.type = "button"; close.textContent = "×"; close.setAttribute("aria-label", "关闭图片");
+        close.type = "button"; close.autofocus = true; close.textContent = "×"; close.setAttribute("aria-label", "关闭图片");
         const enlarged = document.createElement("img"); enlarged.src = image.currentSrc || image.src; enlarged.alt = image.alt;
         dialog.append(close, enlarged); document.body.append(dialog);
         const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
         let animation, closing = false;
-        const finish = () => { if (dialog.isConnected) dialog.close(); };
+        const finish = () => {
+          if (!dialog.isConnected) return;
+          dialog.close();
+          animation?.cancel();
+          dialog.remove();
+          image.focus({preventScroll:true});
+        };
         const dismiss = () => {
           if (closing) return;
           closing = true;
@@ -186,7 +223,6 @@
         close.addEventListener("click", dismiss);
         dialog.addEventListener("click", (event) => { if (event.target === dialog) dismiss(); });
         dialog.addEventListener("cancel", (event) => { event.preventDefault(); dismiss(); });
-        dialog.addEventListener("close", () => { animation?.cancel(); dialog.remove(); image.focus({preventScroll:true}); }, {once: true});
         await enlarged.decode().catch(() => {});
         if (!dialog.isConnected || !image.isConnected || !enlarged.naturalWidth) { dialog.remove(); return; }
         dialog.showModal();

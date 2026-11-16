@@ -17,6 +17,7 @@ import (
 	"github.com/lsy223622/BloGo/internal/site"
 	"github.com/tdewolff/minify/v2"
 	minihtml "github.com/tdewolff/minify/v2/html"
+	"golang.org/x/net/html"
 )
 
 type Renderer struct {
@@ -38,7 +39,7 @@ type view struct {
 	Recent                                []*content.ContentItem
 	Assets                                map[string]string
 	AboutURL, LinksURL                    string
-	Mermaid                               bool
+	Mermaid, Math                         bool
 	Logo, Favicon                         string
 	StatsEnabled                          bool
 	DocumentTitle, MetaTitle, Description string
@@ -153,6 +154,7 @@ func (r *Renderer) Render(p *site.Page) ([]byte, error) {
 		v.Summary = body.Summary
 		v.TOC = body.TOC
 		v.Mermaid = body.Mermaid
+		v.Math = hasMath(body.HTML)
 	}
 	if err := r.metadata(&v); err != nil {
 		return nil, err
@@ -179,4 +181,24 @@ func (r *Renderer) Render(p *site.Page) ([]byte, error) {
 		return nil, err
 	}
 	return b.Bytes(), nil
+}
+
+func hasMath(body string) bool {
+	z := html.NewTokenizer(strings.NewReader(body))
+	for kind := z.Next(); kind != html.ErrorToken; kind = z.Next() {
+		if kind != html.StartTagToken && kind != html.SelfClosingTagToken {
+			continue
+		}
+		for _, attr := range z.Token().Attr {
+			if attr.Key != "class" {
+				continue
+			}
+			for _, class := range strings.Fields(attr.Val) {
+				if class == "math-inline" || class == "math-block" {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
